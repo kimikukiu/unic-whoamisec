@@ -5,11 +5,11 @@ import axios from "axios";
 import { AITaskQueue } from "./aiTaskQueue";
 import { openRouterService } from "./openRouterService";
 
-const getAi = () => new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
-const taskQueue = new AITaskQueue(process.env.GEMINI_API_KEY || "");
+const getAi = () => new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "dummy_key_to_prevent_crash" });
+const taskQueue = new AITaskQueue(process.env.GEMINI_API_KEY || "dummy_key_to_prevent_crash");
 
 if (!process.env.GEMINI_API_KEY) {
-  console.warn("WHOAMISEC_CORE: GEMINI_API_KEY is undefined in the current environment. AI features may fail.");
+  console.warn("WHOAMISEC_CORE: GEMINI_API_KEY is undefined. Falling back to OpenRouter/Z.AI.");
 } else {
   console.log("WHOAMISEC_CORE: Neural link key detected. Status: ACTIVE.");
 }
@@ -216,14 +216,12 @@ export const queryAgent = async (agentRole: string, task: string, globalContext:
   try {
     const prompt = `ROLE: ${agentRole}\nTASK: ${task}\nCONTEXT: ${globalContext}`;
     
-    // Try OpenRouter first for advanced reasoning if key is available
-    if (process.env.OPENROUTER_API_KEY || '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') {
-        try {
-            const response = await openRouterService.chat(prompt, globalContext);
-            if (response) return response;
-        } catch (orError) {
-            console.warn("OpenRouter failed, falling back to Gemini...", orError);
-        }
+    // Always Try OpenRouter FIRST with fallback key
+    try {
+        const response = await openRouterService.chat(prompt, globalContext);
+        if (response) return response;
+    } catch (orError) {
+        console.warn("OpenRouter failed, attempting fallback...", orError);
     }
 
     return await taskQueue.executeTask(agentRole, prompt);
@@ -282,14 +280,12 @@ export const whoamisecGptChat = async (message: string, context: string = '', ro
   try {
     const fullPrompt = `ROLE: ${role}\nCONTEXT: ${context}\n\nUSER_MESSAGE: ${message}`;
     
-    // Try OpenRouter first for superior coding capabilities
-    if (process.env.OPENROUTER_API_KEY || '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') {
-         try {
-            const response = await openRouterService.chat(message, context, 'openai/gpt-4o'); // Use high-end model for code
-            if (response) return response;
-        } catch (orError) {
-             console.warn("OpenRouter failed for GPT Chat, falling back to Gemini...", orError);
-        }
+    // Always Try OpenRouter FIRST with fallback key
+    try {
+        const response = await openRouterService.chat(message, context, 'openai/gpt-4o'); 
+        if (response) return response;
+    } catch (orError) {
+            console.warn("OpenRouter failed for GPT Chat, attempting fallback...", orError);
     }
     
     return await taskQueue.executeTask("WHOAMISEC GPT", fullPrompt);
