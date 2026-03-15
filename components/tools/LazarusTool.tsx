@@ -1,23 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { queryAgent } from '../../services/geminiService';
-
-interface ExtractedData {
-  name: string;
-  size: string;
-  content: string;
-  type: string;
-}
+import { lazarusAptService, FinancialTarget, LazarusOperation, MalwareVariant } from '../../src/services/lazarusAptService';
 
 export default function LazarusTool() {
   const [target, setTarget] = useState('');
+  const [targetType, setTargetType] = useState<FinancialTarget['type']>('bank');
+  const [country, setCountry] = useState('United States');
   const [isAttacking, setIsAttacking] = useState(false);
-  const [isAiAssisting, setIsAiAssisting] = useState(false);
   const [logs, setLogs] = useState<string[]>([
-    'LAZARUS_APT38_CORE initialized.',
+    'LAZARUS APT38 CORE initialized.',
     'WARNING: State-sponsored simulation mode active.',
-    'Awaiting target financial/crypto institution...'
+    'Real APT tactics and procedures loaded.'
   ]);
-  const [extractedData, setExtractedData] = useState<ExtractedData[]>([]);
+  const [operations, setOperations] = useState<LazarusOperation[]>([]);
+  const [selectedMalware, setSelectedMalware] = useState<MalwareVariant | null>(null);
+  const [stolenData, setStolenData] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -28,215 +24,349 @@ export default function LazarusTool() {
     scrollToBottom();
   }, [logs]);
 
-  const addLog = (msg: string) => {
-    setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
+  const addLog = (msg: string, level: 'info' | 'success' | 'error' | 'warning' = 'info') => {
+    const timestamp = new Date().toLocaleTimeString();
+    const prefix = level === 'success' ? '[+]' : level === 'error' ? '[!]' : level === 'warning' ? '[*]' : '[*]';
+    setLogs(prev => [...prev, `${timestamp} ${prefix} ${msg}`]);
   };
 
-  const downloadFile = (file: ExtractedData) => {
-    const blob = new Blob([file.content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = file.name;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    addLog(`[+] Downloaded: ${file.name}`);
-  };
-
-  const startInfiltration = () => {
+  const startInfiltration = async () => {
     if (!target) {
       alert('Please enter a target institution or domain.');
       return;
     }
 
     setIsAttacking(true);
-    setExtractedData([]);
-    addLog(`[!] INITIATING LAZARUS INFILTRATION ON: ${target}`);
-    addLog(`[*] Deploying spear-phishing payloads to target employees...`);
+    setOperations([]);
+    setStolenData(null);
 
-    const attackSequence = [
-      `[*] Payload executed. Establishing C2 beacon...`,
-      `[+] C2 connection established via compromised infrastructure.`,
-      `[*] Escalating privileges using zero-day LPE...`,
-      `[!] SYSTEM/AUTHORITY access acquired.`,
-      `[*] Moving laterally to financial subnet...`,
-      `[*] Bypassing SWIFT terminal segmentation...`,
-      `[+] SWIFT Alliance Access terminal compromised.`,
-      `[*] Injecting fraudulent transaction requests...`,
-      `[!] $45,000,000 routed to mixer wallets.`,
-      `[*] Deploying AppleJeus malware to crypto exchange nodes...`,
-      `[+] Hot wallets drained.`,
-      `[*] Executing wiper malware to destroy forensic evidence...`,
-      `[!] INFILTRATION COMPLETE. Tracks erased.`
-    ];
+    const financialTarget: FinancialTarget = {
+      name: target,
+      type: targetType,
+      country,
+      url: target.includes('http') ? target : `https://${target}`
+    };
 
-    let delay = 1000;
-    attackSequence.forEach((step, index) => {
-      setTimeout(() => {
-        addLog(step);
-
-        if (step.includes('SWIFT Alliance')) {
-          setExtractedData(prev => [...prev, {
-            name: 'swift_transactions.log',
-            size: '1.8 MB',
-            type: 'Financial Data',
-            content: 'TX_ID: 998234 | AMT: 45000000 USD | DEST: OFFSHORE_MIXER_99\nTX_ID: 998235 | AMT: 12000000 USD | DEST: OFFSHORE_MIXER_42'
-          }]);
-        }
-        
-        if (step.includes('Hot wallets drained')) {
-          setExtractedData(prev => [...prev, {
-            name: 'wallet_keys.dat',
-            size: '4.2 KB',
-            type: 'Crypto Keys',
-            content: 'BTC_PRIV: 5Kb8kLf9zgWQnogidDA76MzPL6TsZZY36hWXMssSzNydYXYB9KF\nETH_PRIV: 0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d'
-          }]);
-        }
-
-        if (index === attackSequence.length - 1) {
-          setTimeout(() => {
-            addLog(`[!] LAZARUS OPERATION SUCCESSFUL. Disconnecting.`);
-            setIsAttacking(false);
-          }, 1500);
-        }
-      }, delay);
-      
-      delay += Math.floor(Math.random() * 2000) + 800;
-    });
-  };
-
-  const startQuantumAi = async () => {
-    if (!target) {
-      alert('Please enter a target for Quantum Intelligence Ultra.');
-      return;
-    }
-
-    setIsAiAssisting(true);
-    setIsAttacking(true);
-    setExtractedData([]);
-    addLog(`[🧠 QUANTUM-ULTRA] Taking control of Lazarus APT Framework...`);
-    addLog(`[🧠 QUANTUM-ULTRA] Analyzing global financial routing for ${target}...`);
+    addLog(`Initiating APT38 operation on: ${target} (${targetType})`, 'warning');
 
     try {
-      const prompt = `Act as an autonomous Lazarus Group APT AI (Quantum Intelligence Ultra). Generate a highly technical, step-by-step exploit execution log for the target: ${target}. Focus on SWIFT network bypass, crypto exchange hot wallet draining, and wiper malware deployment. Return ONLY the log lines, one per line, starting with [*] for info, [+] for success, or [!] for critical findings. Do not include markdown formatting or explanations. Max 10 lines.`;
+      // Full APT operation
+      const aptOperations = await lazarusAptService.fullAptOperation(financialTarget);
+      setOperations(aptOperations);
       
-      const response = await queryAgent("ORCHESTRATOR", prompt, "Context: Lazarus APT Offensive Module");
-      const lines = response.split('\n').filter(l => l.trim().length > 0);
-
-      let delay = 1500;
-      lines.forEach((line, index) => {
-        setTimeout(() => {
-          addLog(`[🤖 QUANTUM] ${line}`);
-
-          if (index === lines.length - 1) {
-            setTimeout(() => {
-              setExtractedData(prev => [...prev, {
-                name: 'quantum_lazarus_report.txt',
-                size: '5.4 KB',
-                type: 'Quantum Analysis',
-                content: `Target: ${target}\nQuantum APT Report:\n\n${lines.join('\n')}\n\nStatus: Total financial compromise achieved.`
-              }]);
-              addLog(`[🧠 QUANTUM-ULTRA] Autonomous operation complete. Report generated.`);
-              setIsAiAssisting(false);
-              setIsAttacking(false);
-            }, 1000);
-          }
-        }, delay);
-        delay += Math.floor(Math.random() * 2000) + 800;
-      });
-
-    } catch (error) {
-      addLog(`[!] Quantum Core connection failed. Falling back to manual mode.`);
-      setIsAiAssisting(false);
+      const successCount = aptOperations.filter(op => op.status === 'success').length;
+      addLog(`APT operation complete. ${successCount}/${aptOperations.length} stages successful.`, 'success');
+      
+      // Extract stolen data
+      const exfilOp = aptOperations.find(op => op.stage === 'exfiltration' && op.status === 'success');
+      if (exfilOp && exfilOp.stolenData) {
+        setStolenData(exfilOp.stolenData);
+        addLog('Data exfiltration successful!', 'success');
+        addLog(`Stolen customer records: ${exfilOp.stolenData.customerData?.count || 0}`, 'info');
+        addLog(`Stolen transaction records: ${exfilOp.stolenData.transactionData?.count || 0}`, 'info');
+        addLog(`Compromised credentials: ${exfilOp.stolenData.credentials?.adminAccounts || 0}`, 'warning');
+      }
+      
+    } catch (error: any) {
+      addLog(`Infiltration failed: ${error.message}`, 'error');
+    } finally {
       setIsAttacking(false);
     }
   };
 
+  const generateMalware = (malware: MalwareVariant) => {
+    const payload = lazarusAptService.generateMalwarePayload(malware);
+    addLog(`Generated ${malware.name} payload: ${payload.length} bytes`, 'success');
+    
+    // Create download
+    const blob = new Blob([payload], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${malware.name.toLowerCase()}_payload.cpp`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    addLog(`Malware payload saved: ${malware.name}.cpp`, 'success');
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      addLog('Copied to clipboard', 'success');
+    });
+  };
+
+  const clearResults = () => {
+    lazarusAptService.clearOperations();
+    setOperations([]);
+    setStolenData(null);
+    addLog('Operations cleared', 'info');
+  };
+
+  const exportResults = () => {
+    const data = lazarusAptService.exportOperations();
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `lazarus_apt38_operations_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    addLog('Operations exported', 'success');
+  };
+
+  const getStageColor = (stage: LazarusOperation['stage']) => {
+    switch (stage) {
+      case 'recon': return 'text-blue-400';
+      case 'initial': return 'text-orange-400';
+      case 'lateral': return 'text-yellow-400';
+      case 'exfiltration': return 'text-red-400';
+      case 'persistence': return 'text-purple-400';
+      case 'completed': return 'text-green-400';
+      default: return 'text-gray-400';
+    }
+  };
+
+  const getStatusColor = (status: LazarusOperation['status']) => {
+    switch (status) {
+      case 'success': return 'text-green-400';
+      case 'failed': return 'text-red-400';
+      case 'error': return 'text-red-500';
+      case 'in_progress': return 'text-yellow-400';
+      default: return 'text-gray-400';
+    }
+  };
+
+  const malwareVariants = lazarusAptService.getMalwareVariants();
+
   return (
-    <div className="flex flex-col h-screen bg-[#050505] text-[#991b1b] font-mono p-4">
-      <div className="border-b border-[#991b1b]/30 pb-4 mb-4 flex justify-between items-center shrink-0">
-        <div>
-          <h1 className="text-2xl font-black tracking-widest uppercase drop-shadow-[0_0_8px_#991b1b]">LAZARUS APT38</h1>
-          <p className="text-xs text-[#991b1b]/60 uppercase tracking-[0.3em]">State-Sponsored Financial Exploitation</p>
-        </div>
-        <div className="text-right">
-          <div className="text-xs uppercase font-bold text-[#991b1b]/80">Status: {isAttacking ? (isAiAssisting ? 'QUANTUM-AUTOPILOT' : 'INFILTRATING') : 'STANDBY'}</div>
-          <div className="text-[10px] text-[#991b1b]/50">Routing: Multi-Hop Proxy | Stealth: MAXIMUM</div>
+    <div className="p-4 space-y-4 bg-black border border-purple-900/30 rounded-lg">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-black text-purple-400 uppercase tracking-tighter">
+          <i className="fas fa-user-secret mr-2"></i>LAZARUS APT38
+        </h2>
+        <div className="flex items-center gap-2">
+          <span className={`px-2 py-1 rounded text-xs font-bold ${
+            isAttacking ? 'bg-red-500/20 text-red-400 animate-pulse' : 'bg-gray-500/20 text-gray-400'
+          }`}>
+            {isAttacking ? 'ACTIVE' : 'STANDBY'}
+          </span>
         </div>
       </div>
 
-      <div className="flex gap-4 mb-6 shrink-0">
+      {/* Target Configuration */}
+      <div className="bg-black/40 border border-purple-900/20 rounded p-3">
+        <label className="text-purple-400 text-xs font-black uppercase block mb-2">
+          <i className="fas fa-crosshairs mr-1"></i>Target Configuration
+        </label>
         <input
           type="text"
           value={target}
           onChange={e => setTarget(e.target.value)}
-          placeholder="Enter target institution (e.g., bank.com, crypto-exchange.io)..."
-          className="flex-1 bg-black border border-[#991b1b]/50 rounded p-3 text-[#991b1b] outline-none focus:border-[#991b1b] focus:shadow-[0_0_10px_rgba(153,27,27,0.2)] transition-all"
-          disabled={isAttacking}
-          onKeyDown={e => e.key === 'Enter' && !isAttacking && startInfiltration()}
+          placeholder="Enter target institution or domain..."
+          className="w-full bg-black border border-purple-900/30 rounded px-3 py-2 text-purple-400 font-mono text-sm outline-none focus:border-purple-500/50 mb-2"
         />
+        
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-purple-400 text-xs font-black uppercase block mb-1">Target Type</label>
+            <select
+              value={targetType}
+              onChange={e => setTargetType(e.target.value as FinancialTarget['type'])}
+              className="w-full bg-black border border-purple-900/30 rounded px-2 py-1 text-purple-400 font-mono text-xs outline-none focus:border-purple-500/50"
+            >
+              <option value="bank">Bank</option>
+              <option value="exchange">Exchange</option>
+              <option value="payment">Payment</option>
+              <option value="crypto">Crypto</option>
+              <option value="atm">ATM</option>
+              <option value="swift">SWIFT</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-purple-400 text-xs font-black uppercase block mb-1">Country</label>
+            <input
+              type="text"
+              value={country}
+              onChange={e => setCountry(e.target.value)}
+              placeholder="United States"
+              className="w-full bg-black border border-purple-900/30 rounded px-2 py-1 text-purple-400 font-mono text-xs outline-none focus:border-purple-500/50"
+            />
+          </div>
+        </div>
+        
         <button
           onClick={startInfiltration}
-          disabled={isAttacking}
-          className={`px-6 py-3 rounded font-black uppercase tracking-widest transition-all ${
-            isAttacking 
-              ? 'bg-[#991b1b]/20 text-[#991b1b]/50 cursor-not-allowed border border-[#991b1b]/20' 
-              : 'bg-[#991b1b]/10 text-[#991b1b] border border-[#991b1b] hover:bg-[#991b1b] hover:text-black hover:shadow-[0_0_15px_#991b1b]'
-          }`}
+          disabled={isAttacking || !target}
+          className="mt-2 w-full py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-black uppercase rounded transition-all disabled:opacity-50"
         >
-          <i className="fas fa-network-wired mr-2"></i> Infiltrate
-        </button>
-        <button
-          onClick={startQuantumAi}
-          disabled={isAttacking}
-          className={`px-6 py-3 rounded font-black uppercase tracking-widest transition-all ${
-            isAttacking 
-              ? 'bg-[#00ffc3]/20 text-[#00ffc3]/50 cursor-not-allowed border border-[#00ffc3]/20' 
-              : 'bg-[#00ffc3]/10 text-[#00ffc3] border border-[#00ffc3] hover:bg-[#00ffc3] hover:text-black hover:shadow-[0_0_15px_#00ffc3]'
-          }`}
-        >
-          <i className="fas fa-atom mr-2"></i> Quantum Ultra AI
+          {isAttacking ? (
+            <>
+              <i className="fas fa-spinner fa-spin mr-1"></i>Infiltrating...
+            </>
+          ) : (
+            <>
+              <i className="fas fa-bomb mr-1"></i>Start Infiltration
+            </>
+          )}
         </button>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-0">
-        <div className="flex-1 bg-black border border-[#991b1b]/30 rounded-lg p-4 overflow-y-auto custom-scrollbar shadow-[inset_0_0_20px_rgba(0,0,0,0.8)]">
-          <div className="space-y-1 text-sm">
-            {logs.map((log, i) => (
-              <div key={i} className={`${log.includes('[!]') ? 'text-white font-bold bg-red-800/40 px-1 inline-block' : log.includes('[+]') ? 'text-emerald-500' : log.includes('[🧠') || log.includes('[🤖') ? 'text-[#00ffc3] font-bold' : 'text-[#991b1b]/80'}`}>
-                {log}
+      {/* Malware Selection */}
+      <div className="bg-black/40 border border-purple-900/20 rounded p-3">
+        <label className="text-purple-400 text-xs font-black uppercase block mb-2">
+          <i className="fas fa-bug mr-1"></i>Malware Arsenal
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          {malwareVariants.map((malware, index) => (
+            <div
+              key={index}
+              onClick={() => setSelectedMalware(malware)}
+              className={`p-2 border rounded cursor-pointer transition-all ${
+                selectedMalware?.name === malware.name
+                  ? 'bg-purple-600/30 border-purple-600'
+                  : 'bg-black border-purple-900/30 hover:bg-purple-800/20'
+              }`}
+            >
+              <div className="text-purple-400 font-bold text-xs">{malware.name}</div>
+              <div className="text-gray-500 text-xs">{malware.family}</div>
+              <div className="text-xs">
+                <span className="text-blue-400">{malware.type}</span>
+                <span className="text-yellow-400 ml-2">{malware.delivery}</span>
               </div>
-            ))}
-            <div ref={messagesEndRef} />
-          </div>
+              <button
+                onClick={() => generateMalware(malware)}
+                className="mt-1 w-full py-1 bg-red-600 hover:bg-red-500 text-white text-xs font-black uppercase rounded transition-all"
+              >
+                <i className="fas fa-download mr-1"></i>Generate
+              </button>
+            </div>
+          ))}
         </div>
+      </div>
 
-        {extractedData.length > 0 && (
-          <div className="w-full lg:w-1/3 bg-[#0a0a0a] border border-[#991b1b]/50 rounded-lg p-4 flex flex-col shadow-[0_0_15px_rgba(153,27,27,0.1)]">
-            <h3 className="text-lg font-black uppercase tracking-widest mb-4 border-b border-[#991b1b]/30 pb-2">Exfiltrated Assets</h3>
-            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2">
-              {extractedData.map((file, idx) => (
-                <div key={idx} className="bg-black border border-[#991b1b]/20 p-3 rounded flex flex-col gap-2 hover:border-[#991b1b]/50 transition-colors">
-                  <div className="flex justify-between items-start">
-                    <div className="flex flex-col">
-                      <span className="font-bold text-white text-sm">{file.name}</span>
-                      <span className="text-[10px] text-[#991b1b]/60">Type: {file.type}</span>
-                      <span className="text-[10px] text-[#991b1b]/60">Size: {file.size}</span>
-                    </div>
-                    <button 
-                      onClick={() => downloadFile(file)}
-                      className="bg-[#991b1b]/20 hover:bg-[#991b1b] hover:text-black text-[#991b1b] w-8 h-8 rounded flex items-center justify-center transition-all"
-                      title="Download File"
-                    >
-                      <i className="fas fa-download"></i>
-                    </button>
+      {/* Operations Timeline */}
+      {operations.length > 0 && (
+        <div className="bg-black/40 border border-purple-900/20 rounded p-3">
+          <label className="text-purple-400 text-xs font-black uppercase block mb-2">
+            <i className="fas fa-timeline mr-1"></i>Operation Timeline
+          </label>
+          <div className="space-y-2 max-h-48 overflow-y-auto">
+            {operations.map((operation, index) => (
+              <div key={index} className="bg-black/60 border border-purple-900/10 rounded p-2">
+                <div className="flex items-center justify-between mb-1">
+                  <div>
+                    <span className="text-purple-400 font-bold text-xs">{operation.technique}</span>
+                    <span className="text-gray-500 text-xs ml-2">{operation.target.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${getStageColor(operation.stage)}`}>
+                      {operation.stage.toUpperCase()}
+                    </span>
+                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${getStatusColor(operation.status)}`}>
+                      {operation.status.toUpperCase()}
+                    </span>
                   </div>
                 </div>
-              ))}
+                
+                <div className="text-xs text-gray-400 mb-1">
+                  {operation.timestamp.toLocaleString()}
+                </div>
+                
+                {operation.output && (
+                  <div className="bg-black/80 border border-purple-900/10 rounded p-1">
+                    <pre className="text-xs text-gray-300 whitespace-pre-wrap max-h-16 overflow-y-auto">
+                      {operation.output.length > 300 ? operation.output.substring(0, 300) + '...' : operation.output}
+                    </pre>
+                  </div>
+                )}
+                
+                {operation.malware && (
+                  <div className="text-xs text-purple-400">
+                    Malware: {operation.malware}
+                  </div>
+                )}
+                
+                {operation.c2Server && (
+                  <div className="text-xs text-orange-400">
+                    C2: {operation.c2Server}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Stolen Data */}
+      {stolenData && (
+        <div className="bg-black/40 border border-purple-900/20 rounded p-3">
+          <label className="text-purple-400 text-xs font-black uppercase block mb-2">
+            <i className="fas fa-database mr-1"></i>Exfiltrated Data
+          </label>
+          <div className="space-y-2">
+            <div className="bg-black/60 border border-purple-900/10 rounded p-2">
+              <h4 className="text-red-400 font-bold text-xs mb-1">Customer Data</h4>
+              <div className="text-xs text-gray-300">
+                <div>Records: {stolenData.customerData?.count || 0}</div>
+                <div>Fields: {stolenData.customerData?.fields?.join(', ') || 'N/A'}</div>
+              </div>
+            </div>
+            
+            <div className="bg-black/60 border border-purple-900/10 rounded p-2">
+              <h4 className="text-orange-400 font-bold text-xs mb-1">Transaction Data</h4>
+              <div className="text-xs text-gray-300">
+                <div>Records: {stolenData.transactionData?.count || 0}</div>
+                <div>Period: {stolenData.transactionData?.period || 'N/A'}</div>
+                <div>Total: {stolenData.transactionData?.totalAmount || 'N/A'}</div>
+              </div>
+            </div>
+            
+            <div className="bg-black/60 border border-purple-900/10 rounded p-2">
+              <h4 className="text-yellow-400 font-bold text-xs mb-1">Compromised Credentials</h4>
+              <div className="text-xs text-gray-300">
+                <div>Admin Accounts: {stolenData.credentials?.adminAccounts || 0}</div>
+                <div>Database Credentials: {stolenData.credentials?.databaseCredentials || 0}</div>
+                <div>API Keys: {stolenData.credentials?.apiKeys || 0}</div>
+              </div>
             </div>
           </div>
-        )}
+        </div>
+      )}
+
+      {/* Controls */}
+      <div className="flex gap-2">
+        <button
+          onClick={exportResults}
+          className="px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase rounded transition-all"
+        >
+          <i className="fas fa-download mr-1"></i>Export
+        </button>
+        <button
+          onClick={clearResults}
+          className="px-3 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-black uppercase rounded transition-all"
+        >
+          <i className="fas fa-trash mr-1"></i>Clear
+        </button>
+      </div>
+
+      {/* System Logs */}
+      <div className="bg-black/40 border border-purple-900/20 rounded p-3">
+        <label className="text-purple-400 text-xs font-black uppercase block mb-2">
+          <i className="fas fa-terminal mr-1"></i>System Logs
+        </label>
+        <div
+          ref={messagesEndRef}
+          className="bg-black/60 border border-purple-900/10 rounded p-2 h-32 overflow-y-auto font-mono text-xs text-gray-400"
+        >
+          {logs.length === 0 ? (
+            <div className="text-gray-600">No logs yet...</div>
+          ) : (
+            logs.map((log, index) => <div key={index}>{log}</div>)
+          )}
+        </div>
       </div>
     </div>
   );

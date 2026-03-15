@@ -15,7 +15,7 @@ export interface LazarusOperation {
   target: FinancialTarget;
   technique: string;
   stage: 'recon' | 'initial' | 'lateral' | 'exfiltration' | 'persistence' | 'completed';
-  status: 'success' | 'failed' | 'in_progress';
+  status: 'success' | 'failed' | 'in_progress' | 'error';
   payload?: string;
   c2Server?: string;
   malware?: string;
@@ -207,7 +207,7 @@ export class LazarusAptService {
   }
 
   // Generate realistic malware payload
-  private generateMalwarePayload(malware: MalwareVariant): string {
+  generateMalwarePayload(malware: MalwareVariant): string {
     const payloads: Record<string, () => string> = {
       'AppleJeus': () => this.generateAppleJeusPayload(),
       'Fallchill': () => this.generateFallchillPayload(),
@@ -575,6 +575,11 @@ int main() {
   // Get operations
   getOperations(): LazarusOperation[] {
     return this.operations;
+  }
+
+  // Clear operations
+  clearOperations(): void {
+    this.operations = [];
   }
 
   // Get malware variants

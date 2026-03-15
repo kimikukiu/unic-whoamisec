@@ -1,19 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { queryAgent } from '../../services/geminiService';
-
-interface FoundFile {
-  name: string;
-  size: string;
-  content: string;
-  bucket: string;
-}
+import { s3ExploitService, S3Bucket, S3Object, S3ExploitResult } from '../../src/services/s3ExploitService';
 
 export default function S3BucketsTool() {
   const [target, setTarget] = useState('');
   const [isScanning, setIsScanning] = useState(false);
-  const [isAiAssisting, setIsAiAssisting] = useState(false);
-  const [logs, setLogs] = useState<string[]>(['S3_BUCKET_SCANNER_V1.0 initialized.', 'Waiting for target domain or keyword...']);
-  const [foundFiles, setFoundFiles] = useState<FoundFile[]>([]);
+  const [logs, setLogs] = useState<string[]>([
+    'S3 BUCKET REAPER V2.0 initialized.',
+    'Real AWS S3 exploitation engine ready.',
+    'Awaiting target domain or keyword...'
+  ]);
+  const [buckets, setBuckets] = useState<S3Bucket[]>([]);
+  const [results, setResults] = useState<S3ExploitResult[]>([]);
+  const [selectedBucket, setSelectedBucket] = useState<S3Bucket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -24,219 +22,389 @@ export default function S3BucketsTool() {
     scrollToBottom();
   }, [logs]);
 
-  const addLog = (msg: string) => {
-    setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
+  const addLog = (msg: string, level: 'info' | 'success' | 'error' | 'warning' = 'info') => {
+    const timestamp = new Date().toLocaleTimeString();
+    const prefix = level === 'success' ? '[+]' : level === 'error' ? '[!]' : level === 'warning' ? '[*]' : '[*]';
+    setLogs(prev => [...prev, `${timestamp} ${prefix} ${msg}`]);
   };
 
-  const downloadFile = (file: FoundFile) => {
-    const blob = new Blob([file.content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = file.name;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    addLog(`[+] Downloaded: ${file.name}`);
-  };
-
-  const startScan = () => {
+  const startScan = async () => {
     if (!target) {
       alert('Please enter a target domain or keyword.');
       return;
     }
 
     setIsScanning(true);
-    setFoundFiles([]);
-    addLog(`Initiating deep scan for S3 buckets related to: ${target}`);
-    addLog(`Generating permutations for ${target}...`);
-
-    const permutations = [
-      target,
-      `${target}-dev`,
-      `${target}-prod`,
-      `${target}-staging`,
-      `${target}-assets`,
-      `${target}-public`,
-      `${target}-backup`,
-      `dev-${target}`,
-      `prod-${target}`,
-      `${target}-logs`
-    ];
-
-    let delay = 1000;
-    permutations.forEach((perm, index) => {
-      setTimeout(() => {
-        addLog(`Checking bucket: ${perm}.s3.amazonaws.com...`);
-        
-        // Simulate finding something on specific permutations
-        if (index === 2 || index === 5) {
-          setTimeout(() => {
-            addLog(`[!] BUCKET FOUND: ${perm}.s3.amazonaws.com`);
-            addLog(`[+] Access: PUBLIC_READ`);
-            addLog(`[+] Enumerating objects...`);
-            setTimeout(() => {
-              addLog(`    -> config.json (4.2 KB)`);
-              addLog(`    -> users_backup.csv (12.8 MB)`);
-              addLog(`    -> db_credentials.txt (0.1 KB) - CRITICAL`);
-              
-              setFoundFiles(prev => [
-                ...prev,
-                { name: 'config.json', size: '4.2 KB', content: '{\n  "dbHost": "internal-db.amazonaws.com",\n  "debug": true\n}', bucket: perm },
-                { name: 'users_backup.csv', size: '12.8 MB', content: 'id,email,hash\n1,admin@domain.com,$2y$10$...\n2,test@domain.com,$2y$10$...', bucket: perm },
-                { name: 'db_credentials.txt', size: '0.1 KB', content: 'DB_USER=root\nDB_PASS=super_secret_password_123\nDB_NAME=production_db', bucket: perm }
-              ]);
-            }, 800);
-          }, 500);
-        } else {
-          setTimeout(() => {
-            addLog(`[-] Bucket ${perm} not found or Access Denied (403).`);
-          }, 400);
-        }
-
-        if (index === permutations.length - 1) {
-          setTimeout(() => {
-            addLog(`Scan complete for target: ${target}.`);
-            setIsScanning(false);
-          }, 1500);
-        }
-      }, delay);
-      delay += 1500;
-    });
-  };
-
-  const startAiAssist = async () => {
-    if (!target) {
-      alert('Please enter a target domain for the AI to analyze.');
-      return;
-    }
-
-    setIsAiAssisting(true);
-    setIsScanning(true);
-    setFoundFiles([]);
-    addLog(`[🧠 AI-ASSIST] Neural Core taking control of S3 Reaper...`);
-    addLog(`[🧠 AI-ASSIST] Generating advanced permutations and analyzing cloud infrastructure for ${target}...`);
+    setBuckets([]);
+    setResults([]);
+    addLog(`Starting S3 bucket enumeration for: ${target}`, 'warning');
 
     try {
-      const prompt = `Act as an autonomous Blackhat AI integrated into an S3 Bucket Scanner. Generate a highly technical, step-by-step execution log for the target: ${target}. Focus on finding exposed cloud storage, misconfigured IAM roles, and sensitive data leaks. Return ONLY the log lines, one per line, starting with [*] for info, [+] for success, or [!] for critical findings. Do not include markdown formatting or explanations. Max 10 lines.`;
+      const discoveredBuckets = await s3ExploitService.enumerateBuckets(target);
+      setBuckets(discoveredBuckets);
       
-      const response = await queryAgent("ORCHESTRATOR", prompt, "Context: Cloud Security Offensive Module");
-      const lines = response.split('\n').filter(l => l.trim().length > 0);
-
-      let delay = 1500;
-      lines.forEach((line, index) => {
-        setTimeout(() => {
-          addLog(`[🤖 AI] ${line}`);
-
-          if (index === lines.length - 1) {
-            setTimeout(() => {
-              setFoundFiles(prev => [...prev, {
-                name: 'ai_cloud_recon_report.txt',
-                size: '5.1 KB',
-                bucket: `ai-recon-${target}`,
-                content: `Target: ${target}\nAI Cloud Reconnaissance Report:\n\n${lines.join('\n')}\n\nStatus: Exposed data identified and cataloged.`
-              }]);
-              addLog(`[🧠 AI-ASSIST] Autonomous scan complete. Report generated.`);
-              setIsAiAssisting(false);
-              setIsScanning(false);
-            }, 1000);
-          }
-        }, delay);
-        delay += Math.floor(Math.random() * 2000) + 800;
-      });
-
-    } catch (error) {
-      addLog(`[!] AI Core connection failed. Falling back to manual mode.`);
-      setIsAiAssisting(false);
+      addLog(`Enumeration complete. Found ${discoveredBuckets.length} buckets`, 'success');
+      
+      // Automatically test each bucket
+      for (const bucket of discoveredBuckets) {
+        addLog(`Testing bucket: ${bucket.name}`, 'info');
+        const listingResult = await s3ExploitService.checkBucketListing(bucket.name);
+        results.push(listingResult);
+        
+        if (listingResult.status === 'success') {
+          addLog(`✓ Bucket ${bucket.name} - LISTING VULNERABLE!`, 'success');
+        }
+        
+        const writeResult = await s3ExploitService.checkBucketWrite(bucket.name);
+        results.push(writeResult);
+        
+        if (writeResult.status === 'success') {
+          addLog(`✓ Bucket ${bucket.name} - WRITE VULNERABLE!`, 'success');
+        }
+      }
+      
+      setResults(results);
+      results.forEach(result => s3ExploitService.addResult(result));
+      
+    } catch (error: any) {
+      addLog(`Scan failed: ${error.message}`, 'error');
+    } finally {
       setIsScanning(false);
     }
   };
 
+  const exploitBucket = async (bucket: S3Bucket) => {
+    addLog(`Starting full exploitation of bucket: ${bucket.name}`, 'warning');
+    
+    try {
+      const exploitResults = await s3ExploitService.exploitBucket(bucket.name);
+      setResults([...results, ...exploitResults]);
+      
+      addLog(`Exploitation complete for ${bucket.name}`, 'success');
+      
+      const successCount = exploitResults.filter(r => r.status === 'success').length;
+      addLog(`Successful operations: ${successCount}/${exploitResults.length}`, 'info');
+      
+    } catch (error: any) {
+      addLog(`Exploitation failed: ${error.message}`, 'error');
+    }
+  };
+
+  const downloadObject = async (bucketName: string, objectKey: string) => {
+    addLog(`Downloading object: ${objectKey} from ${bucketName}`, 'info');
+    
+    try {
+      const result = await s3ExploitService.downloadObject(bucketName, objectKey);
+      results.push(result);
+      setResults([...results, result]);
+      
+      if (result.status === 'success') {
+        addLog(`✓ Successfully downloaded: ${objectKey}`, 'success');
+        
+        // Create download
+        const blob = new Blob([result.output], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = objectKey.split('/').pop() || objectKey;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        addLog(`File saved: ${objectKey}`, 'success');
+      } else {
+        addLog(`Failed to download: ${objectKey}`, 'error');
+      }
+      
+    } catch (error: any) {
+      addLog(`Download failed: ${error.message}`, 'error');
+    }
+  };
+
+  const checkCredentials = async (bucketName: string) => {
+    addLog(`Checking for credentials in bucket: ${bucketName}`, 'info');
+    
+    try {
+      const result = await s3ExploitService.checkCredentials(bucketName);
+      results.push(result);
+      setResults([...results, result]);
+      
+      if (result.status === 'success') {
+        addLog(`✓ Credentials found in ${bucketName}!`, 'success');
+      } else {
+        addLog(`No credentials found in ${bucketName}`, 'warning');
+      }
+      
+    } catch (error: any) {
+      addLog(`Credential check failed: ${error.message}`, 'error');
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      addLog('Copied to clipboard', 'success');
+    });
+  };
+
+  const clearResults = () => {
+    s3ExploitService.clearResults();
+    setResults([]);
+    addLog('Results cleared', 'info');
+  };
+
+  const exportResults = () => {
+    const data = s3ExploitService.exportResults();
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `s3_exploit_results_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    addLog('Results exported', 'success');
+  };
+
+  const getRiskColor = (permissions: S3Bucket['permissions']) => {
+    if (permissions.read && permissions.write && permissions.list && permissions.acl) {
+      return 'text-red-400';
+    } else if (permissions.read || permissions.list) {
+      return 'text-orange-400';
+    } else {
+      return 'text-yellow-400';
+    }
+  };
+
   return (
-    <div className="flex flex-col h-screen bg-[#050505] text-[#f59e0b] font-mono p-4">
-      <div className="border-b border-[#f59e0b]/30 pb-4 mb-4 flex justify-between items-center shrink-0">
-        <div>
-          <h1 className="text-2xl font-black tracking-widest uppercase drop-shadow-[0_0_8px_#f59e0b]">S3 BUCKET REAPER</h1>
-          <p className="text-xs text-[#f59e0b]/60 uppercase tracking-[0.3em]">AWS / GCP / Azure Storage Enumeration</p>
-        </div>
-        <div className="text-right">
-          <div className="text-xs uppercase font-bold text-[#f59e0b]/80">Status: {isScanning ? (isAiAssisting ? 'AI-AUTOPILOT' : 'SCANNING') : 'IDLE'}</div>
-          <div className="text-[10px] text-[#f59e0b]/50">Threads: 50 | Timeout: 5s</div>
+    <div className="p-4 space-y-4 bg-black border border-yellow-900/30 rounded-lg">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-black text-yellow-400 uppercase tracking-tighter">
+          <i className="fab fa-aws mr-2"></i>S3 BUCKET REAPER
+        </h2>
+        <div className="flex items-center gap-2">
+          <span className={`px-2 py-1 rounded text-xs font-bold ${
+            buckets.length > 0 ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
+          }`}>
+            {buckets.length} BUCKETS
+          </span>
         </div>
       </div>
 
-      <div className="flex gap-4 mb-6 shrink-0">
+      {/* Target Configuration */}
+      <div className="bg-black/40 border border-yellow-900/20 rounded p-3">
+        <label className="text-yellow-400 text-xs font-black uppercase block mb-2">
+          <i className="fas fa-crosshairs mr-1"></i>Target Configuration
+        </label>
         <input
           type="text"
           value={target}
           onChange={e => setTarget(e.target.value)}
-          placeholder="Enter target domain (e.g., example.com) or keyword..."
-          className="flex-1 bg-black border border-[#f59e0b]/50 rounded p-3 text-[#f59e0b] outline-none focus:border-[#f59e0b] focus:shadow-[0_0_10px_rgba(245,158,11,0.2)] transition-all"
-          disabled={isScanning}
-          onKeyDown={e => e.key === 'Enter' && !isScanning && startScan()}
+          placeholder="Enter target domain or keyword..."
+          className="w-full bg-black border border-yellow-900/30 rounded px-3 py-2 text-yellow-400 font-mono text-sm outline-none focus:border-yellow-500/50"
         />
         <button
           onClick={startScan}
-          disabled={isScanning}
-          className={`px-6 py-3 rounded font-black uppercase tracking-widest transition-all ${
-            isScanning 
-              ? 'bg-[#f59e0b]/20 text-[#f59e0b]/50 cursor-not-allowed border border-[#f59e0b]/20' 
-              : 'bg-[#f59e0b]/10 text-[#f59e0b] border border-[#f59e0b] hover:bg-[#f59e0b] hover:text-black hover:shadow-[0_0_15px_#f59e0b]'
-          }`}
+          disabled={isScanning || !target}
+          className="mt-2 w-full py-2 bg-yellow-600 hover:bg-yellow-500 text-white text-xs font-black uppercase rounded transition-all disabled:opacity-50"
         >
-          <i className="fas fa-search mr-2"></i> Start Scan
-        </button>
-        <button
-          onClick={startAiAssist}
-          disabled={isScanning}
-          className={`px-6 py-3 rounded font-black uppercase tracking-widest transition-all ${
-            isScanning 
-              ? 'bg-[#00ffc3]/20 text-[#00ffc3]/50 cursor-not-allowed border border-[#00ffc3]/20' 
-              : 'bg-[#00ffc3]/10 text-[#00ffc3] border border-[#00ffc3] hover:bg-[#00ffc3] hover:text-black hover:shadow-[0_0_15px_#00ffc3]'
-          }`}
-        >
-          <i className="fas fa-brain mr-2"></i> AI Auto-Pilot
+          {isScanning ? (
+            <>
+              <i className="fas fa-spinner fa-spin mr-1"></i>Scanning...
+            </>
+          ) : (
+            <>
+              <i className="fas fa-search mr-1"></i>Enumerate Buckets
+            </>
+          )}
         </button>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-0">
-        <div className="flex-1 bg-black border border-[#f59e0b]/30 rounded-lg p-4 overflow-y-auto custom-scrollbar shadow-[inset_0_0_20px_rgba(0,0,0,0.8)]">
-          <div className="space-y-1 text-sm">
-            {logs.map((log, i) => (
-              <div key={i} className={`${log.includes('[!]') ? 'text-red-500 font-bold' : log.includes('[+]') ? 'text-emerald-500' : log.includes('CRITICAL') ? 'text-red-500 bg-red-500/10 inline-block px-1' : 'text-[#f59e0b]/80'}`}>
-                {log}
+      {/* Bucket List */}
+      {buckets.length > 0 && (
+        <div className="bg-black/40 border border-yellow-900/20 rounded p-3">
+          <label className="text-yellow-400 text-xs font-black uppercase block mb-2">
+            <i className="fas fa-database mr-1"></i>Discovered Buckets
+          </label>
+          <div className="space-y-2 max-h-48 overflow-y-auto">
+            {buckets.map((bucket, index) => (
+              <div key={index} className="bg-black/60 border border-yellow-900/10 rounded p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <h4 className="text-yellow-400 font-bold">{bucket.name}</h4>
+                    <p className="text-gray-500 text-xs">Region: {bucket.region}</p>
+                  </div>
+                  <span className={`px-2 py-0.5 rounded text-xs font-bold ${getRiskColor(bucket.permissions)}`}>
+                    {bucket.permissions.read ? 'R' : ''}
+                    {bucket.permissions.write ? 'W' : ''}
+                    {bucket.permissions.list ? 'L' : ''}
+                    {bucket.permissions.acl ? 'A' : ''}
+                  </span>
+                </div>
+                
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setSelectedBucket(bucket)}
+                    className="px-2 py-1 bg-blue-600/20 border border-blue-600 text-blue-400 text-xs rounded hover:bg-blue-600/30"
+                  >
+                    <i className="fas fa-eye mr-1"></i>Details
+                  </button>
+                  <button
+                    onClick={() => exploitBucket(bucket)}
+                    className="px-2 py-1 bg-red-600/20 border border-red-600 text-red-400 text-xs rounded hover:bg-red-600/30"
+                  >
+                    <i className="fas fa-bomb mr-1"></i>Exploit
+                  </button>
+                  <button
+                    onClick={() => checkCredentials(bucket.name)}
+                    className="px-2 py-1 bg-orange-600/20 border border-orange-600 text-orange-400 text-xs rounded hover:bg-orange-600/30"
+                  >
+                    <i className="fas fa-key mr-1"></i>Creds
+                  </button>
+                </div>
               </div>
             ))}
-            <div ref={messagesEndRef} />
           </div>
         </div>
+      )}
 
-        {foundFiles.length > 0 && (
-          <div className="w-full lg:w-1/3 bg-[#0a0a0a] border border-[#f59e0b]/50 rounded-lg p-4 flex flex-col shadow-[0_0_15px_rgba(245,158,11,0.1)]">
-            <h3 className="text-lg font-black uppercase tracking-widest mb-4 border-b border-[#f59e0b]/30 pb-2">Extracted Loot</h3>
-            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2">
-              {foundFiles.map((file, idx) => (
-                <div key={idx} className="bg-black border border-[#f59e0b]/20 p-3 rounded flex flex-col gap-2 hover:border-[#f59e0b]/50 transition-colors">
-                  <div className="flex justify-between items-start">
-                    <div className="flex flex-col">
-                      <span className="font-bold text-white text-sm">{file.name}</span>
-                      <span className="text-[10px] text-[#f59e0b]/60">Bucket: {file.bucket}</span>
-                      <span className="text-[10px] text-[#f59e0b]/60">Size: {file.size}</span>
-                    </div>
-                    <button 
-                      onClick={() => downloadFile(file)}
-                      className="bg-[#f59e0b]/20 hover:bg-[#f59e0b] hover:text-black text-[#f59e0b] w-8 h-8 rounded flex items-center justify-center transition-all"
-                      title="Download File"
-                    >
-                      <i className="fas fa-download"></i>
-                    </button>
-                  </div>
-                </div>
-              ))}
+      {/* Bucket Details */}
+      {selectedBucket && (
+        <div className="bg-black/40 border border-yellow-900/20 rounded p-3">
+          <label className="text-yellow-400 text-xs font-black uppercase block mb-2">
+            <i className="fas fa-info-circle mr-1"></i>Bucket Details: {selectedBucket.name}
+          </label>
+          <div className="grid grid-cols-2 gap-2 text-xs mb-3">
+            <div>
+              <span className="text-gray-400">Region:</span>
+              <span className="text-yellow-400 ml-2">{selectedBucket.region}</span>
+            </div>
+            <div>
+              <span className="text-gray-400">Objects:</span>
+              <span className="text-yellow-400 ml-2">{selectedBucket.objectCount}</span>
+            </div>
+            <div>
+              <span className="text-gray-400">Size:</span>
+              <span className="text-yellow-400 ml-2">{selectedBucket.size} bytes</span>
+            </div>
+            <div>
+              <span className="text-gray-400">Created:</span>
+              <span className="text-yellow-400 ml-2">{selectedBucket.creationDate.toLocaleDateString()}</span>
             </div>
           </div>
-        )}
+          
+          <div className="mb-3">
+            <span className="text-gray-400 text-xs">Permissions:</span>
+            <div className="flex gap-2 mt-1">
+              {selectedBucket.permissions.read && <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded">READ</span>}
+              {selectedBucket.permissions.write && <span className="px-2 py-1 bg-orange-500/20 text-orange-400 text-xs rounded">WRITE</span>}
+              {selectedBucket.permissions.list && <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded">LIST</span>}
+              {selectedBucket.permissions.acl && <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded">ACL</span>}
+            </div>
+          </div>
+          
+          <div className="flex gap-2">
+            <button
+              onClick={() => copyToClipboard(s3ExploitService.generateAWSCommands(selectedBucket.name).join('\n'))}
+              className="px-2 py-1 bg-green-600/20 border border-green-600 text-green-400 text-xs rounded hover:bg-green-600/30"
+            >
+              <i className="fas fa-terminal mr-1"></i>AWS CLI
+            </button>
+            <button
+              onClick={() => copyToClipboard(s3ExploitService.generateS3cmdCommands(selectedBucket.name).join('\n'))}
+              className="px-2 py-1 bg-blue-600/20 border border-blue-600 text-blue-400 text-xs rounded hover:bg-blue-600/30"
+            >
+              <i className="fas fa-terminal mr-1"></i>s3cmd
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Results */}
+      {results.length > 0 && (
+        <div className="bg-black/40 border border-yellow-900/20 rounded p-3">
+          <div className="flex justify-between items-center mb-2">
+            <label className="text-yellow-400 text-xs font-black uppercase block">
+              <i className="fas fa-chart-bar mr-1"></i>Exploitation Results
+            </label>
+            <div className="flex gap-2">
+              <button
+                onClick={exportResults}
+                className="px-2 py-1 bg-blue-600/20 border border-blue-600 text-blue-400 text-xs rounded hover:bg-blue-600/30"
+              >
+                <i className="fas fa-download mr-1"></i>Export
+              </button>
+              <button
+                onClick={clearResults}
+                className="px-2 py-1 bg-red-600/20 border border-red-600 text-red-400 text-xs rounded hover:bg-red-600/30"
+              >
+                <i className="fas fa-trash mr-1"></i>Clear
+              </button>
+            </div>
+          </div>
+          
+          <div className="space-y-2 max-h-48 overflow-y-auto">
+            {results.map((result, index) => (
+              <div key={index} className={`bg-black/60 border rounded p-2 ${
+                result.status === 'success' ? 'border-green-900/20' : 
+                result.status === 'failed' ? 'border-yellow-900/20' : 
+                'border-red-900/20'
+              }`}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-yellow-400 font-bold text-xs">{result.exploit}</span>
+                  <span className={`px-2 py-0.5 rounded text-xs font-bold ${
+                    result.status === 'success' ? 'bg-green-500/20 text-green-400' : 
+                    result.status === 'failed' ? 'bg-yellow-500/20 text-yellow-400' : 
+                    'bg-red-500/20 text-red-400'
+                  }`}>
+                    {result.status.toUpperCase()}
+                  </span>
+                </div>
+                
+                <div className="text-xs text-gray-400 mb-1">
+                  Bucket: {result.bucket} | {result.timestamp.toLocaleTimeString()}
+                </div>
+                
+                {result.objects && result.objects.length > 0 && (
+                  <div className="mb-1">
+                    <span className="text-gray-500 text-xs">Objects found:</span>
+                    <span className="text-yellow-400 ml-2">{result.objects.length}</span>
+                  </div>
+                )}
+                
+                {result.output && (
+                  <div className="bg-black/80 border border-yellow-900/10 rounded p-1">
+                    <pre className="text-xs text-gray-300 whitespace-pre-wrap max-h-20 overflow-y-auto">
+                      {result.output.length > 500 ? result.output.substring(0, 500) + '...' : result.output}
+                    </pre>
+                  </div>
+                )}
+                
+                {result.error && (
+                  <div className="text-red-400 text-xs">
+                    Error: {result.error}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* System Logs */}
+      <div className="bg-black/40 border border-yellow-900/20 rounded p-3">
+        <label className="text-yellow-400 text-xs font-black uppercase block mb-2">
+          <i className="fas fa-terminal mr-1"></i>System Logs
+        </label>
+        <div
+          ref={messagesEndRef}
+          className="bg-black/60 border border-yellow-900/10 rounded p-2 h-32 overflow-y-auto font-mono text-xs text-gray-400"
+        >
+          {logs.length === 0 ? (
+            <div className="text-gray-600">No logs yet...</div>
+          ) : (
+            logs.map((log, index) => <div key={index}>{log}</div>)
+          )}
+        </div>
       </div>
     </div>
   );
