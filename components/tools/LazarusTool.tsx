@@ -14,6 +14,9 @@ export default function LazarusTool() {
   const [operations, setOperations] = useState<LazarusOperation[]>([]);
   const [selectedMalware, setSelectedMalware] = useState<MalwareVariant | null>(null);
   const [stolenData, setStolenData] = useState<any>(null);
+  const [walletAddress, setWalletAddress] = useState('');
+  const [payoutAmount, setPayoutAmount] = useState('');
+  const [moneroAddress, setMoneroAddress] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -117,6 +120,30 @@ export default function LazarusTool() {
     addLog('Operations exported', 'success');
   };
 
+  const processPayment = () => {
+    if (!stolenData || !walletAddress || !payoutAmount || !moneroAddress) {
+      addLog('Missing payment configuration or stolen data', 'error');
+      return;
+    }
+
+    addLog('Processing payment through cryptocurrency network...', 'warning');
+    
+    // Simulate payment processing
+    setTimeout(() => {
+      const totalValue = stolenData.transactionData?.totalAmount || '$0';
+      const ptcValue = parseFloat(payoutAmount) || 0;
+      
+      addLog(`Payment processed: ${ptcValue} PTC`, 'success');
+      addLog(`Converted from stolen value: ${totalValue}`, 'info');
+      addLog(`Routed to Monero address: ${moneroAddress.substring(0, 10)}...`, 'success');
+      addLog(`Transaction confirmed - funds laundered successfully`, 'success');
+      
+      // Clear payment fields after processing
+      setPayoutAmount('');
+      addLog('Payment configuration cleared for security', 'warning');
+    }, 2000);
+  };
+
   const getStageColor = (stage: LazarusOperation['stage']) => {
     switch (stage) {
       case 'recon': return 'text-blue-400';
@@ -214,6 +241,61 @@ export default function LazarusTool() {
         </button>
       </div>
 
+      {/* Wallet Configuration */}
+      <div className="bg-black/40 border border-purple-900/20 rounded p-3">
+        <label className="text-purple-400 text-xs font-black uppercase block mb-2">
+          <i className="fas fa-wallet mr-1"></i>Payment Configuration
+        </label>
+        <div className="space-y-2">
+          <div>
+            <label className="text-purple-400 text-xs font-black uppercase block mb-1">Your Wallet Address</label>
+            <input
+              type="text"
+              value={walletAddress}
+              onChange={e => setWalletAddress(e.target.value)}
+              placeholder="Enter your wallet address..."
+              className="w-full bg-black border border-purple-900/30 rounded px-3 py-2 text-purple-400 font-mono text-sm outline-none focus:border-purple-500/50"
+            />
+          </div>
+          
+          <div>
+            <label className="text-purple-400 text-xs font-black uppercase block mb-1">Payout Amount (PTC)</label>
+            <input
+              type="text"
+              value={payoutAmount}
+              onChange={e => setPayoutAmount(e.target.value)}
+              placeholder="Enter amount in PTC..."
+              className="w-full bg-black border border-purple-900/30 rounded px-3 py-2 text-purple-400 font-mono text-sm outline-none focus:border-purple-500/50"
+            />
+          </div>
+          
+          <div>
+            <label className="text-purple-400 text-xs font-black uppercase block mb-1">Monero Receive Address</label>
+            <input
+              type="text"
+              value={moneroAddress}
+              onChange={e => setMoneroAddress(e.target.value)}
+              placeholder="Enter Monero address for payout..."
+              className="w-full bg-black border border-purple-900/30 rounded px-3 py-2 text-purple-400 font-mono text-sm outline-none focus:border-purple-500/50"
+            />
+          </div>
+          
+          <button
+            onClick={() => {
+              if (walletAddress && payoutAmount && moneroAddress) {
+                addLog(`Payment configuration saved: ${payoutAmount} PTC to ${moneroAddress}`, 'success');
+                addLog(`Funds will be routed through wallet: ${walletAddress.substring(0, 10)}...`, 'info');
+              } else {
+                addLog('Please fill all payment fields', 'error');
+              }
+            }}
+            className="w-full py-2 bg-green-600 hover:bg-green-500 text-white text-xs font-black uppercase rounded transition-all"
+          >
+            <i className="fas fa-save mr-1"></i>Save Payment Config
+          </button>
+        </div>
+      </div>
+
       {/* Malware Selection */}
       <div className="bg-black/40 border border-purple-900/20 rounded p-3">
         <label className="text-purple-400 text-xs font-black uppercase block mb-2">
@@ -247,59 +329,6 @@ export default function LazarusTool() {
         </div>
       </div>
 
-      {/* Operations Timeline */}
-      {operations.length > 0 && (
-        <div className="bg-black/40 border border-purple-900/20 rounded p-3">
-          <label className="text-purple-400 text-xs font-black uppercase block mb-2">
-            <i className="fas fa-timeline mr-1"></i>Operation Timeline
-          </label>
-          <div className="space-y-2 max-h-48 overflow-y-auto">
-            {operations.map((operation, index) => (
-              <div key={index} className="bg-black/60 border border-purple-900/10 rounded p-2">
-                <div className="flex items-center justify-between mb-1">
-                  <div>
-                    <span className="text-purple-400 font-bold text-xs">{operation.technique}</span>
-                    <span className="text-gray-500 text-xs ml-2">{operation.target.name}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${getStageColor(operation.stage)}`}>
-                      {operation.stage.toUpperCase()}
-                    </span>
-                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${getStatusColor(operation.status)}`}>
-                      {operation.status.toUpperCase()}
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="text-xs text-gray-400 mb-1">
-                  {operation.timestamp.toLocaleString()}
-                </div>
-                
-                {operation.output && (
-                  <div className="bg-black/80 border border-purple-900/10 rounded p-1">
-                    <pre className="text-xs text-gray-300 whitespace-pre-wrap max-h-16 overflow-y-auto">
-                      {operation.output.length > 300 ? operation.output.substring(0, 300) + '...' : operation.output}
-                    </pre>
-                  </div>
-                )}
-                
-                {operation.malware && (
-                  <div className="text-xs text-purple-400">
-                    Malware: {operation.malware}
-                  </div>
-                )}
-                
-                {operation.c2Server && (
-                  <div className="text-xs text-orange-400">
-                    C2: {operation.c2Server}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Stolen Data */}
       {stolenData && (
         <div className="bg-black/40 border border-purple-900/20 rounded p-3">
@@ -330,6 +359,33 @@ export default function LazarusTool() {
                 <div>Admin Accounts: {stolenData.credentials?.adminAccounts || 0}</div>
                 <div>Database Credentials: {stolenData.credentials?.databaseCredentials || 0}</div>
                 <div>API Keys: {stolenData.credentials?.apiKeys || 0}</div>
+              </div>
+            </div>
+            
+            {/* Payment Processing */}
+            <div className="bg-black/60 border border-purple-900/10 rounded p-2">
+              <h4 className="text-green-400 font-bold text-xs mb-2">
+                <i className="fas fa-coins mr-1"></i>Payment Processing
+              </h4>
+              <div className="space-y-2">
+                <div className="text-xs text-gray-300">
+                  <div>Wallet: {walletAddress ? `${walletAddress.substring(0, 10)}...` : 'Not configured'}</div>
+                  <div>Amount: {payoutAmount || '0'} PTC</div>
+                  <div>Monero: {moneroAddress ? `${moneroAddress.substring(0, 10)}...` : 'Not configured'}</div>
+                </div>
+                
+                <button
+                  onClick={processPayment}
+                  disabled={!walletAddress || !payoutAmount || !moneroAddress}
+                  className="w-full py-1 bg-green-600 hover:bg-green-500 text-white text-xs font-black uppercase rounded transition-all disabled:opacity-50"
+                >
+                  <i className="fas fa-exchange-alt mr-1"></i>Process Payment
+                </button>
+                
+                <div className="text-xs text-yellow-400">
+                  <i className="fas fa-exclamation-triangle mr-1"></i>
+                  Funds will be converted to Monero for anonymous transfer
+                </div>
               </div>
             </div>
           </div>
