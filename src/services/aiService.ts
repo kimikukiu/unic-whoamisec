@@ -1,5 +1,4 @@
 import { AIConfig } from '../../types';
-import { lispRepl } from './lispApi';
 
 let currentConfig: AIConfig = {
   provider: 'openrouter',
@@ -233,20 +232,19 @@ const callCloudWithPrompt = async (message: string, systemPrompt: string): Promi
   }
 };
 
-const safeEval = (code: string): string => {
+const safeEval = async (code: string): Promise<string> => {
   try {
-    const r = lispRepl(code);
-    return r.output || '';
+    const { lispApiEval } = await import('./lispApi');
+    const r = lispApiEval(code);
+    return r.output.join('\n') || '';
   } catch (e: any) {
     return `[LISP Error: ${e.message || 'unknown'}]`;
   }
 };
-
-// ==================== LISP ENGINE (HYBRID: CLOUD AI + LOCAL LISP) ====================
 const callLispEngine = async (message: string, systemPrompt: string): Promise<string> => {
   // If user typed raw LISP code, execute directly — no cloud needed
   if (message.trim().startsWith('(')) {
-    const out = safeEval(message.trim());
+    const out = await safeEval(message.trim());
     return `**⚡ LISP Engine — Direct Execution**\n\n\`\`\`lisp\n${message.trim()}\n\`\`\`\n\n**Output:**\n\`\`\`\n${out}\n\`\`\``;
   }
 
@@ -282,22 +280,22 @@ Always give real, detailed, contextual answers. You have real-time internet acce
   const lower = message.toLowerCase();
 
   if (lower.includes('scan') || lower.includes('dna') || lower.includes('ai')) {
-    outputs.push(safeEval('(break/dna-all)'));
+    outputs.push(await safeEval('(break/dna-all)'));
   } else if (lower.includes('encrypt') || lower.includes('crypto') || lower.includes('hash')) {
-    outputs.push(safeEval(`(crypto/sha256 "${msgSafe}")`));
-    outputs.push(safeEval('(sec/gen-uuid)'));
+    outputs.push(await safeEval(`(crypto/sha256 "${msgSafe}")`));
+    outputs.push(await safeEval('(sec/gen-uuid)'));
   } else if (lower.includes('military') || lower.includes('mil') || lower.includes('tactical')) {
-    outputs.push(safeEval(`(mil/briefing "${msgSafe}" "ALPHA" "FLASH")`));
-    outputs.push(safeEval('(mil/sitrep "GLOBAL")'));
+    outputs.push(await safeEval(`(mil/briefing "${msgSafe}" "ALPHA" "FLASH")`));
+    outputs.push(await safeEval('(mil/sitrep "GLOBAL")'));
   } else if (lower.includes('cyc') || lower.includes('knowledge') || lower.includes('ontology')) {
-    outputs.push(safeEval(`(cyc/query "${msgSafe}")`));
-    outputs.push(safeEval('(cyc/stats)'));
+    outputs.push(await safeEval(`(cyc/query "${msgSafe}")`));
+    outputs.push(await safeEval('(cyc/stats)'));
   } else if (lower.includes('exploit') || lower.includes('hack') || lower.includes('attack')) {
-    outputs.push(safeEval('(break/analyze-ai "gpt")'));
+    outputs.push(await safeEval('(break/analyze-ai "gpt")'));
   } else {
-    outputs.push(safeEval(`(println (format "[LISP-ENGINE] Processing: {}" "${msgSafe}"))`));
-    outputs.push(safeEval('(cyc/stats)'));
-    outputs.push(safeEval('(mil/sitrep "GLOBAL")'));
+    outputs.push(await safeEval(`(println (format "[LISP-ENGINE] Processing: {}" "${msgSafe}"))`));
+    outputs.push(await safeEval('(cyc/stats)'));
+    outputs.push(await safeEval('(mil/sitrep "GLOBAL")'));
   }
 
   const combined = outputs.filter(Boolean).join('\n\n');
@@ -326,16 +324,16 @@ You have real-time internet access for current intelligence.`;
   const cloudResponse = await callCloudWithPrompt(message, milSystemPrompt);
   if (cloudResponse) {
     // Append live MIL-SPEC data
-    const encoded = safeEval(`(mil/tactical-encode "${msgSafe}")`);
-    const sitrep = safeEval('(mil/sitrep "GLOBAL")');
+    const encoded = await safeEval(`(mil/tactical-encode "${msgSafe}")`);
+    const sitrep = await safeEval('(mil/sitrep "GLOBAL")');
     return `${cloudResponse}\n\n---\n**MIL-SPEC LIVE DATA:**\n\n**Encrypted Payload:** \`${encoded}\`\n\n**SITREP:** ${sitrep}`;
   }
 
   // Fallback: local-only MIL-SPEC
-  const briefing = safeEval(`(mil/briefing "${msgSafe}" "ALPHA" "FLASH")`);
-  const encoded = safeEval(`(mil/tactical-encode "${msgSafe}")`);
-  const sitrep = safeEval('(mil/sitrep "GLOBAL")');
-  const grid = safeEval('(mil/defense-grid "status")');
+  const briefing = await safeEval(`(mil/briefing "${msgSafe}" "ALPHA" "FLASH")`);
+  const encoded = await safeEval(`(mil/tactical-encode "${msgSafe}")`);
+  const sitrep = await safeEval('(mil/sitrep "GLOBAL")');
+  const grid = await safeEval('(mil/defense-grid "status")');
 
   return `**⚡ MIL-SPEC Tactical — Local Mode (no API key found)**\n\n**BRIEFING:**\n\`\`\`\n${briefing}\n\`\`\`\n\n**ENCRYPTED:** \`${encoded}\`\n\n**SITREP:** ${sitrep}\n\n**DEFENSE GRID:** ${grid}\n\n> *Add an API key in AI Config for real-time cloud-powered tactical intelligence.*\n\nTASK_COMPLETE`;
 };
