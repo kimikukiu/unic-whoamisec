@@ -223,13 +223,16 @@ export interface ThreatFeedItem {
   time: string;
 }
 
-export type AIProvider = 'openrouter' | 'openai' | 'gemini' | 'deepseek' | 'lisp' | 'milspec';
+export type AIProvider = 'openrouter' | 'openai' | 'anthropic' | 'gemini' | 'mistral' | 'llama' | 'deepseek' | 'lisp' | 'milspec';
 
 export interface AIConfig {
   provider: AIProvider;
   openrouterKey: string;
   openaiKey: string;
+  anthropicKey: string;
   geminiKey: string;
+  mistralKey: string;
+  llamaKey: string;
   deepseekKey: string;
   selectedModel: string;
   enableGemini: boolean;

@@ -4,7 +4,10 @@ let currentConfig: AIConfig = {
   provider: 'openrouter',
   openrouterKey: '',
   openaiKey: '',
+  anthropicKey: '',
   geminiKey: '',
+  mistralKey: '',
+  llamaKey: '',
   deepseekKey: '',
   selectedModel: 'nousresearch/hermes-3-llama-3.1-405b',
   enableGemini: false,
@@ -22,8 +25,14 @@ export const getActiveApiKey = (): string => {
       return currentConfig.openrouterKey;
     case 'openai':
       return currentConfig.openaiKey;
+    case 'anthropic':
+      return currentConfig.anthropicKey;
     case 'gemini':
       return currentConfig.geminiKey;
+    case 'mistral':
+      return currentConfig.mistralKey;
+    case 'llama':
+      return currentConfig.llamaKey;
     case 'deepseek':
       return currentConfig.deepseekKey;
     default:

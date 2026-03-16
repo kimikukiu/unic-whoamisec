@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { AITaskQueue } from '../services/aiTaskQueue';
+import ApiConfigPanel from './ApiConfigPanel';
+import { getActiveApiKey, getAIConfig } from '../services/aiService';
 
 export default function QuantumIntelligenceUltra() {
   const [activeTab, setActiveTab] = useState('orchestrator');
@@ -33,12 +35,23 @@ export default function QuantumIntelligenceUltra() {
       return;
     }
     
-    if (task.startsWith('ask ')) {
-      const question = task.substring(4);
-      logSystem(`Asking AI: ${question}`);
+    // Check if we should prioritize Quantum Intelligence (always primary)
+    const config = getAIConfig();
+    const hasExternalAPI = getActiveApiKey();
+    
+    if (task.startsWith('ask ') || task.startsWith('chat ') || task.startsWith('question ')) {
+      const question = task.replace(/^(ask|chat|question)\s+/, '');
+      logSystem(`[QUANTUM INTELLIGENCE] Processing: ${question}`);
+      
+      // Quantum Intelligence always responds first, even if external APIs are configured
       taskQueue.current.executeTask("QuantumIntelligenceUltra", question).then(res => {
         setTaskResult(res);
-        logSystem('AI Analysis complete');
+        logSystem('Quantum Intelligence analysis complete');
+        
+        // Optionally mention external API availability
+        if (hasExternalAPI && config.provider !== 'lisp' && config.provider !== 'milspec') {
+          logSystem(`External API (${config.provider}) available as secondary option`);
+        }
       });
     }
     else if (task.includes('gpt') || task.includes('chat') || task.includes('ask')) {
@@ -144,6 +157,9 @@ export default function QuantumIntelligenceUltra() {
           <p className="text-[#aa00ff] animate-pulse">&gt; CURRENT_TASK: [SPREADING_V8_WORM]</p>
         </div>
       </div>
+    ),
+    api: (
+      <ApiConfigPanel />
     )
   };
 
@@ -188,8 +204,8 @@ export default function QuantumIntelligenceUltra() {
 
         {/* MIDDLE PANEL: Tabs Orchestrator / Researcher / Coder */}
         <div className="bg-[#0e1313] border border-[#00ffc3] rounded-xl p-4 flex flex-col gap-4 overflow-hidden">
-          <div className="grid grid-cols-4 gap-1 border-b border-[#00ffc3] pb-2">
-            {['orchestrator', 'researcher', 'coder', 'botnet'].map(tab => (
+          <div className="grid grid-cols-5 gap-1 border-b border-[#00ffc3] pb-2">
+            {['orchestrator', 'researcher', 'coder', 'botnet', 'api'].map(tab => (
               <div
                 key={tab}
                 onClick={() => {
@@ -231,6 +247,23 @@ export default function QuantumIntelligenceUltra() {
             <div className="flex justify-between">
               <span>TOOLS:</span>
               <span className="text-[#00ffc3]">7 AVAILABLE</span>
+            </div>
+            <div className="flex justify-between">
+              <span>AI PRIORITY:</span>
+              <span className="text-[#00ffc3]">QUANTUM</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span>API STATUS:</span>
+              <div className="flex items-center gap-1">
+                <div className={`w-2 h-2 rounded-full ${getActiveApiKey() || getAIConfig().provider === 'lisp' || getAIConfig().provider === 'milspec' ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></div>
+                <span className={`text-xs ${getActiveApiKey() || getAIConfig().provider === 'lisp' || getAIConfig().provider === 'milspec' ? 'text-emerald-500' : 'text-red-500'}`}>
+                  {getActiveApiKey() || getAIConfig().provider === 'lisp' || getAIConfig().provider === 'milspec' ? 'CONNECTED' : 'DISCONNECTED'}
+                </span>
+              </div>
+            </div>
+            <div className="flex justify-between">
+              <span>PROVIDER:</span>
+              <span className="text-[#ffaa00] text-xs uppercase">{getAIConfig().provider}</span>
             </div>
           </div>
           <div className="mt-6 flex-1 overflow-y-auto custom-scrollbar">
