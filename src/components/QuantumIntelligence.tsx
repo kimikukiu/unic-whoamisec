@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AITaskQueue } from '../services/aiTaskQueue';
 import ApiConfigPanel from './ApiConfigPanel';
 import { getActiveApiKey, getAIConfig } from '../services/aiService';
 
 export default function QuantumIntelligenceUltra() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('orchestrator');
   const [input, setInput] = useState('');
   const [systemLogs, setSystemLogs] = useState<string[]>([
@@ -55,43 +57,43 @@ export default function QuantumIntelligenceUltra() {
       });
     }
     else if (task.includes('gpt') || task.includes('chat') || task.includes('ask')) {
-      window.open('/gpt-tool', '_blank');
+      navigate('/gpt-tool');
       logSystem('Launching GPT tool');
     }
     else if (task.includes('ide') || task.includes('code') || task.includes('compile')) {
-      window.open('/ide-tool', '_blank');
+      navigate('/ide-tool');
       logSystem('Launching IDE tool');
     }
     else if (task.includes('solana') || task.includes('chain') || task.includes('blockchain')) {
-      window.open('/solana-tool', '_blank');
+      navigate('/solana-tool');
       logSystem('Launching Solana tool');
     }
     else if (task.includes('deploy') || task.includes('contract') || task.includes('zero-time')) {
-      window.open('/deployer-tool', '_blank');
+      navigate('/deployer-tool');
       logSystem('Launching Deployer tool');
     }
     else if (task.includes('quantum') || task.includes('qbit')) {
-      window.open('/quantum-tool', '_blank');
+      navigate('/quantum-tool');
       logSystem('Launching Quantum tool');
     }
     else if (task.includes('scan') || task.includes('network') || task.includes('port')) {
-      window.open('/scanner-tool', '_blank');
+      navigate('/scanner-tool');
       logSystem('Launching Scanner tool');
     }
     else if (task.includes('s3') || task.includes('bucket') || task.includes('aws')) {
-      window.open('/s3-tool', '_blank');
+      navigate('/s3-tool');
       logSystem('Launching S3 Buckets tool');
     }
     else if (task.includes('blackhat') || task.includes('exploit') || task.includes('ninja')) {
-      window.open('/blackhat-tool', '_blank');
+      navigate('/blackhat-tool');
       logSystem('Launching Blackhat tool');
     }
     else if (task.includes('burp') || task.includes('proxy') || task.includes('intruder')) {
-      window.open('/burpsuite-tool', '_blank');
+      navigate('/burpsuite-tool');
       logSystem('Launching BurpSuite tool');
     }
     else if (task.includes('owasp') || task.includes('zap') || task.includes('active scan')) {
-      window.open('/owasp-tool', '_blank');
+      navigate('/owasp-tool');
       logSystem('Launching OWASP ZAP tool');
     }
     else {
@@ -177,16 +179,16 @@ export default function QuantumIntelligenceUltra() {
           </div>
           
           <div className="grid grid-cols-2 gap-2 my-4">
-            <button onClick={() => window.open('/gpt-tool', '_blank')} className="bg-black/20 border border-[#00ffc3] text-[#00ffc3] p-3 text-center rounded-md font-bold text-sm hover:bg-[#00ffc3]/13 hover:shadow-[0_0_15px_#00ffc3] transition-all">🤖 GPT CHAT</button>
-            <button onClick={() => window.open('/ide-tool', '_blank')} className="bg-black/20 border border-[#ffaa00] text-[#ffaa00] p-3 text-center rounded-md font-bold text-sm hover:bg-[#ffaa00]/13 hover:shadow-[0_0_15px_#ffaa00] transition-all">💻 IDE</button>
-            <button onClick={() => window.open('/solana-tool', '_blank')} className="bg-black/20 border border-[#aa00ff] text-[#aa00ff] p-3 text-center rounded-md font-bold text-sm hover:bg-[#aa00ff]/13 hover:shadow-[0_0_15px_#aa00ff] transition-all">⛓️ SOLANA</button>
-            <button onClick={() => window.open('/deployer-tool', '_blank')} className="bg-black/20 border border-[#ff5e00] text-[#ff5e00] p-3 text-center rounded-md font-bold text-sm hover:bg-[#ff5e00]/13 hover:shadow-[0_0_15px_#ff5e00] transition-all">🚀 DEPLOYER</button>
-            <button onClick={() => window.open('/quantum-tool', '_blank')} className="bg-black/20 border border-[#00ffff] text-[#00ffff] p-3 text-center rounded-md font-bold text-sm hover:bg-[#00ffff]/13 hover:shadow-[0_0_15px_#00ffff] transition-all">⚛️ QUANTUM</button>
-            <button onClick={() => window.open('/scanner-tool', '_blank')} className="bg-black/20 border border-[#ff00ff] text-[#ff00ff] p-3 text-center rounded-md font-bold text-sm hover:bg-[#ff00ff]/13 hover:shadow-[0_0_15px_#ff00ff] transition-all">🔍 SCANNER</button>
-            <button onClick={() => window.open('/s3-tool', '_blank')} className="bg-black/20 border border-[#f59e0b] text-[#f59e0b] p-3 text-center rounded-md font-bold text-sm hover:bg-[#f59e0b]/13 hover:shadow-[0_0_15px_#f59e0b] transition-all">🪣 S3 BUCKETS</button>
-            <button onClick={() => window.open('/blackhat-tool', '_blank')} className="bg-black/20 border border-[#ef4444] text-[#ef4444] p-3 text-center rounded-md font-bold text-sm hover:bg-[#ef4444]/13 hover:shadow-[0_0_15px_#ef4444] transition-all">🥷 BLACKHAT</button>
-            <button onClick={() => window.open('/burpsuite-tool', '_blank')} className="bg-black/20 border border-[#ff6600] text-[#ff6600] p-3 text-center rounded-md font-bold text-sm hover:bg-[#ff6600]/13 hover:shadow-[0_0_15px_#ff6600] transition-all">🕷️ BURPSUITE</button>
-            <button onClick={() => window.open('/owasp-tool', '_blank')} className="bg-black/20 border border-[#3b82f6] text-[#3b82f6] p-3 text-center rounded-md font-bold text-sm hover:bg-[#3b82f6]/13 hover:shadow-[0_0_15px_#3b82f6] transition-all">📡 OWASP ZAP</button>
+            <button onClick={() => navigate('/gpt-tool')} className="bg-black/20 border border-[#00ffc3] text-[#00ffc3] p-3 text-center rounded-md font-bold text-sm hover:bg-[#00ffc3]/13 hover:shadow-[0_0_15px_#00ffc3] transition-all">🤖 GPT CHAT</button>
+            <button onClick={() => navigate('/ide-tool')} className="bg-black/20 border border-[#ffaa00] text-[#ffaa00] p-3 text-center rounded-md font-bold text-sm hover:bg-[#ffaa00]/13 hover:shadow-[0_0_15px_#ffaa00] transition-all">💻 IDE</button>
+            <button onClick={() => navigate('/solana-tool')} className="bg-black/20 border border-[#aa00ff] text-[#aa00ff] p-3 text-center rounded-md font-bold text-sm hover:bg-[#aa00ff]/13 hover:shadow-[0_0_15px_#aa00ff] transition-all">⛓️ SOLANA</button>
+            <button onClick={() => navigate('/deployer-tool')} className="bg-black/20 border border-[#ff5e00] text-[#ff5e00] p-3 text-center rounded-md font-bold text-sm hover:bg-[#ff5e00]/13 hover:shadow-[0_0_15px_#ff5e00] transition-all">🚀 DEPLOYER</button>
+            <button onClick={() => navigate('/quantum-tool')} className="bg-black/20 border border-[#00ffff] text-[#00ffff] p-3 text-center rounded-md font-bold text-sm hover:bg-[#00ffff]/13 hover:shadow-[0_0_15px_#00ffff] transition-all">⚛️ QUANTUM</button>
+            <button onClick={() => navigate('/scanner-tool')} className="bg-black/20 border border-[#ff00ff] text-[#ff00ff] p-3 text-center rounded-md font-bold text-sm hover:bg-[#ff00ff]/13 hover:shadow-[0_0_15px_#ff00ff] transition-all">🔍 SCANNER</button>
+            <button onClick={() => navigate('/s3-tool')} className="bg-black/20 border border-[#f59e0b] text-[#f59e0b] p-3 text-center rounded-md font-bold text-sm hover:bg-[#f59e0b]/13 hover:shadow-[0_0_15px_#f59e0b] transition-all">🪣 S3 BUCKETS</button>
+            <button onClick={() => navigate('/blackhat-tool')} className="bg-black/20 border border-[#ef4444] text-[#ef4444] p-3 text-center rounded-md font-bold text-sm hover:bg-[#ef4444]/13 hover:shadow-[0_0_15px_#ef4444] transition-all">🥷 BLACKHAT</button>
+            <button onClick={() => navigate('/burpsuite-tool')} className="bg-black/20 border border-[#ff6600] text-[#ff6600] p-3 text-center rounded-md font-bold text-sm hover:bg-[#ff6600]/13 hover:shadow-[0_0_15px_#ff6600] transition-all">🕷️ BURPSUITE</button>
+            <button onClick={() => navigate('/owasp-tool')} className="bg-black/20 border border-[#3b82f6] text-[#3b82f6] p-3 text-center rounded-md font-bold text-sm hover:bg-[#3b82f6]/13 hover:shadow-[0_0_15px_#3b82f6] transition-all">📡 OWASP ZAP</button>
             <button onClick={() => {
               // We can't easily switch tabs in App.tsx from here if it's in a new window, 
               // but if it's the component version, we might need a different approach.
