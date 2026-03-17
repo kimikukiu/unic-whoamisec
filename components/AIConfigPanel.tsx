@@ -30,9 +30,17 @@ const AI_MODELS: Record<AIProvider, { id: string; name: string; desc: string }[]
     { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', desc: 'Balanced performance' },
   ],
   deepseek: [
-    { id: 'deepseek-chat', name: 'DeepSeek Chat', desc: 'General purpose chat model' },
-    { id: 'deepseek-coder', name: 'DeepSeek Coder', desc: 'Code generation specialist' },
-    { id: 'deepseek-reasoner', name: 'DeepSeek Reasoner', desc: 'Advanced reasoning (R1)' },
+    { id: "deepseek", name: "DeepSeek Default", desc: "Balanced general chat" },
+    { id: "deepseek-think", name: "DeepSeek Think", desc: "Reasoning-optimized responses" },
+    { id: "deepseek-r1", name: "DeepSeek R1", desc: "R1 reasoning model" },
+    { id: "deepseek-search", name: "DeepSeek Search", desc: "Web-connected search mode" },
+    { id: "deepseek-r1-search", name: "DeepSeek R1 Search", desc: "R1 with search augmentation" },
+    { id: "deepseek-think-search", name: "DeepSeek Think Search", desc: "Think mode + search" },
+    { id: "deepseek-think-silent", name: "DeepSeek Think Silent", desc: "Think mode without chain output" },
+    { id: "deepseek-r1-silent", name: "DeepSeek R1 Silent", desc: "R1 without chain output" },
+    { id: "deepseek-search-silent", name: "DeepSeek Search Silent", desc: "Search without chain output" },
+    { id: "deepseek-think-fold", name: "DeepSeek Think Fold", desc: "Compact reasoning summaries" },
+    { id: "deepseek-r1-fold", name: "DeepSeek R1 Fold", desc: "Compact R1 summaries" },
   ],
   lisp: [
     { id: 'genesis-crack', name: 'Genesis Crack LISP', desc: 'Full LISP interpreter — 350+ functions — LOCAL' },
@@ -75,11 +83,11 @@ const PROVIDER_INFO: Record<AIProvider, { name: string; icon: React.ReactNode; c
     url: 'https://aistudio.google.com/app/apikey',
   },
   deepseek: {
-    name: 'DeepSeek',
+    name: "DeepSeek",
     icon: <Brain className="w-5 h-5" />,
-    color: 'text-cyan-400',
-    desc: 'DeepSeek direct API — chat, code & reasoning',
-    url: 'https://platform.deepseek.com/api_keys',
+    color: "text-cyan-400",
+    desc: "DeepSeek Free API (OpenAI-compatible) — chat + reasoning",
+    url: "https://github.com/LLM-Red-Team/deepseek-free-api",
   },
   lisp: {
     name: 'LISP Engine',
@@ -317,11 +325,18 @@ const AIConfigPanel: React.FC<AIConfigPanelProps> = ({ config, onConfigChange, a
               type="password"
               value={localConfig.deepseekKey}
               onChange={(e) => setLocalConfig({ ...localConfig, deepseekKey: e.target.value })}
-              placeholder="sk-..."
+              placeholder="Optional token"
               className="w-full bg-black border border-white/10 rounded px-3 py-2 text-[11px] text-cyan-400 font-mono outline-none focus:border-cyan-500/50"
             />
             <p className="text-[7px] text-gray-600">
               Get your key at <a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline">platform.deepseek.com</a>
+            <input
+              type="text"
+              value={localConfig.deepseekBaseUrl}
+              onChange={(e) => setLocalConfig({ ...localConfig, deepseekBaseUrl: e.target.value })}
+              placeholder="http://localhost:8000"
+              className="w-full bg-black border border-white/10 rounded px-3 py-2 text-[11px] text-cyan-200 font-mono outline-none focus:border-cyan-500/50"
+            />
             </p>
           </div>
 
