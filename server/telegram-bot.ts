@@ -95,7 +95,7 @@ export class WHMun1cTelegramBot {
     // ==========================================
     
     // Main WormGPT Menu
-    this.bot.onText(/\/wormgpt$/, (msg) => {
+    this.bot.onText(/\\/wormgpt(?:@[a-zA-Z0-9_]+)?$/, (msg) => {
       if (!this.isAdmin(msg.chat.id.toString())) return;
       const menu = `
 💀 **WormGPT Complete Arsenal** 💀
