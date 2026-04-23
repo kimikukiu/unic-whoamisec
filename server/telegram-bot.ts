@@ -324,7 +324,7 @@ export class WHMun1cTelegramBot {
         inline_keyboard: [
           [
             { text: '📢 WHOAMISec', url: 'https://t.me/WHOAMISec' },
-            { text: '📢 Memariuvip', url: 'https://t.me/Memariuvip' }
+            { text: '📢 memariivip', url: 'https://t.me/memariivip' }
           ],
           [
             { text: '📢 WHOAMOSecAI', url: 'https://t.me/WHOAMOSecAI' }
