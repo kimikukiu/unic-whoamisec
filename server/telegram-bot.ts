@@ -233,6 +233,82 @@ export class WHMun1cTelegramBot {
     this.bot.on('polling_error', (error) => {
       console.error('[Telegram Bot] Polling error:', error);
     });
+
+    // ========== NEW: ADMIN CHECK COMMAND ==========
+    this.bot.onText(/\/admin_check(?:@[a-zA-Z0-9_]+)?/, async (msg) => {
+      const chatId = msg.chat.id.toString();
+      
+      try {
+        const chatMember = await this.bot.getChatMember(chatId, msg.from!.id);
+        const isAdmin = ['administrator', 'creator'].includes(chatMember.status);
+        
+        const statusIcon = isAdmin ? '✅' : '❌';
+        const role = chatMember.status === 'creator' ? '👑 Creator' : 
+                     chatMember.status === 'administrator' ? '⚡ Admin' : '👤 Member';
+        
+        await this.bot.sendMessage(chatId,
+          `⚙️ **ADMIN STATUS CHECK** ⚙️\n\n` +
+          `Chat: ${msg.chat.title || 'Private'}\n` +
+          `User: ${msg.from?.username || msg.from?.first_name}\n` +
+          `Role: ${role}\n` +
+          `Status: ${statusIcon} ${isAdmin ? 'IS ADMIN' : 'NOT ADMIN'}\n\n` +
+          (isAdmin ? 
+            `✅ **You have FULL ADMIN RIGHTS!**\n` +
+            `📡 Bot can execute all commands.` : 
+            `❌ **Add me as Admin:**\n` +
+            `1. Go to Group Settings\n` +
+            `2. Administrators > Add Admin\n` +
+            `3. Select me (@${await this.bot.getMe().then(b => b.username)})\n` +
+            `4. Grant ALL permissions`),
+          { parse_mode: 'Markdown' }
+        );
+      } catch (error) {
+        await this.bot.sendMessage(chatId, `❌ Error checking admin status: ${error}`);
+      }
+    });
+
+    // ========== NEW: CALLBACK QUERY HANDLER ==========
+    this.bot.on('callback_query', async (callbackQuery) => {
+      const action = callbackQuery.data;
+      const msg = callbackQuery.message;
+      
+      if (action === 'admin_guide') {
+        await this.bot.editMessageText(
+          `⚙️ **ADMIN GUIDE** ⚙️\n\n` +
+          `**HOW TO ADD BOT AS ADMIN:**\n\n` +
+          `1️⃣ **Add Bot to Group/Channel**\n` +
+          `   • Click "Add Bot to Group" button\n` +
+          `   • Or search: @${await this.bot.getMe().then(b => b.username)}\n\n` +
+          `2️⃣ **Grant Admin Rights**\n` +
+          `   • Go to Group Settings > Administrators\n` +
+          `   • Click "Add Admin" > Select Bot\n` +
+          `   • Enable ALL permissions:\n` +
+          `     ✅ Ban Users\n` +
+          `     ✅ Delete Messages\n` +
+          `     ✅ Invite Users\n` +
+          `     ✅ Pin Messages\n` +
+          `     ✅ Manage Voice Chats\n` +
+          `     ✅ Everything!\n\n` +
+          `3️⃣ **Verify**\n` +
+          `   • Use /admin_check to verify\n\n` +
+          `4️⃣ **Enjoy FULL POWER!** 😈`,
+          {
+            chat_id: msg!.chat.id,
+            message_id: msg!.message_id,
+            parse_mode: 'Markdown',
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: '✅ Got it!', callback_data: 'guide_dismiss' }]
+              ]
+            }
+          }
+        );
+      } else if (action === 'guide_dismiss') {
+        await this.bot.deleteMessage(msg!.chat.id, msg!.message_id);
+      }
+      
+      await this.bot.answerCallbackQuery(callbackQuery.id);
+    });
   }
 
   private async isAdmin(chatId: string): Promise<boolean> {
@@ -242,13 +318,39 @@ export class WHMun1cTelegramBot {
   private async handleStart(msg: TelegramBot.Message) {
     const chatId = msg.chat.id.toString();
     
+    const opts: TelegramBot.SendMessageOptions = {
+      parse_mode: 'Markdown',
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: '📢 WHOAMISec', url: 'https://t.me/WHOAMISec' },
+            { text: '📢 Memariuvip', url: 'https://t.me/Memariuvip' }
+          ],
+          [
+            { text: '📢 WHOAMOSecAI', url: 'https://t.me/WHOAMOSecAI' }
+          ],
+          [
+            { text: '➕ Add Bot to Group', url: 'https://t.me/Fuck_your_local_jew_bot?startgroup=true' },
+            { text: '⚙️ Admin Guide', callback_data: 'admin_guide' }
+          ]
+        ]
+      }
+    };
+
     await this.bot.sendMessage(chatId, 
-      `🚀 **whm-un1c Project Bot**\n\n` +
+      `🚀 **whm-un1c Project Bot** 🚀\n\n` +
       `✅ **Project:** whm-un1c\n` +
       `🤖 **Backend:** Online\n` +
       `📡 **Status:** Active\n\n` +
+      `🔘 **JOIN OUR CHANNELS:**\n` +
+      `Click the buttons below to join!\n\n` +
+      `⚙️ **Make me Admin:**\n` +
+      `1. Add me to your group/channel\n` +
+      `2. Go to Group Settings > Admins\n` +
+      `3. Add me as Admin with FULL RIGHTS\n` +
+      `4. Use /admin_check to verify\n\n` +
       `Use /help to see available commands.`,
-      { parse_mode: 'Markdown' }
+      opts
     );
   }
 
