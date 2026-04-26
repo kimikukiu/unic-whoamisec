@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { exploitService, ExploitResult, Vulnerability } from '../../src/services/exploitService';
+import QuantumIntelligenceHelper from '../../src/services/quantumIntelligenceHelper';
 
 export default function BlackhatTool() {
   const [target, setTarget] = useState('');

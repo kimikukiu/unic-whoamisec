@@ -24,12 +24,7 @@ const MediaCreators: React.FC<MediaCreatorsProps> = ({ addLog }) => {
     if (!prompt.trim()) return;
 
     if (type === 'video' && engine === 'gemini') {
-      const hasKey = await (window as any).aistudio.hasSelectedApiKey();
-      if (!hasKey) {
-        addLog("MEDIA: A paid API key is required for video generation. Please select one.", "error");
-        await (window as any).aistudio.openSelectKey();
-        return;
-      }
+      addLog("MEDIA: Video generation requires API key configuration.", "warning");
     }
 
     setIsGenerating(true);

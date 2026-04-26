@@ -9,6 +9,7 @@ let currentConfig: AIConfig = {
   mistralKey: '',
   llamaKey: '',
   deepseekKey: '',
+  deepseekFreeKey: '',
   selectedModel: 'nousresearch/hermes-3-llama-3.1-405b',
   enableGemini: false,
 };
@@ -35,6 +36,8 @@ export const getActiveApiKey = (): string => {
       return currentConfig.llamaKey;
     case 'deepseek':
       return currentConfig.deepseekKey;
+    case 'deepseek-free':
+      return currentConfig.deepseekFreeKey;
     default:
       return currentConfig.openrouterKey;
   }
@@ -65,10 +68,14 @@ export const aiChat = async (
         return await callOpenRouter(message, fullSystemPrompt, apiKey);
       case 'openai':
         return await callOpenAI(message, fullSystemPrompt, apiKey);
+      case 'anthropic':
+        return await callAnthropic(message, fullSystemPrompt, apiKey);
       case 'gemini':
         return await callGemini(message, fullSystemPrompt, apiKey);
       case 'deepseek':
         return await callDeepSeek(message, fullSystemPrompt, apiKey);
+      case 'deepseek-free':
+        return await callDeepSeekFree(message, fullSystemPrompt, apiKey);
       case 'lisp':
         return await callLispEngine(message, fullSystemPrompt);
       case 'milspec':
@@ -181,6 +188,38 @@ const callGemini = async (message: string, systemPrompt: string, apiKey: string)
   return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 };
 
+const callAnthropic = async (message: string, systemPrompt: string, apiKey: string): Promise<string> => {
+  const model = currentConfig.selectedModel.includes('claude') 
+    ? currentConfig.selectedModel 
+    : 'claude-3-5-sonnet-20241022';
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'Content-Type': 'application/json',
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 4000,
+      temperature: 0.7,
+      system: systemPrompt,
+      messages: [
+        { role: 'user', content: message }
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error?.message || `Anthropic error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.content?.[0]?.text || '';
+};
+
 const callDeepSeek = async (message: string, systemPrompt: string, apiKey: string): Promise<string> => {
   const model = currentConfig.selectedModel.includes('deepseek') 
     ? currentConfig.selectedModel 
@@ -212,14 +251,51 @@ const callDeepSeek = async (message: string, systemPrompt: string, apiKey: strin
   return data.choices[0]?.message?.content || '';
 };
 
+const callDeepSeekFree = async (message: string, systemPrompt: string, apiKey: string): Promise<string> => {
+  // DeepSeek Free API models (from LLM-Red-Team reverse engineering)
+  const model = currentConfig.selectedModel.includes('deepseek') 
+    ? currentConfig.selectedModel 
+    : 'deepseek'; // default free model
+
+  const response = await fetch('https://your-deepseek-free-api-instance.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: message }
+      ],
+      temperature: 0.7,
+      max_tokens: 4000,
+      stream: false,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error?.message || `DeepSeek Free API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.choices[0]?.message?.content || '';
+};
+
 // ==================== HELPER: find any available API key ====================
 const findAvailableApi = (): { provider: string; key: string } | null => {
   if (currentConfig.openrouterKey && currentConfig.openrouterKey.length > 10)
     return { provider: 'openrouter', key: currentConfig.openrouterKey };
   if (currentConfig.openaiKey && currentConfig.openaiKey.length > 10)
     return { provider: 'openai', key: currentConfig.openaiKey };
+  if (currentConfig.anthropicKey && currentConfig.anthropicKey.length > 10)
+    return { provider: 'anthropic', key: currentConfig.anthropicKey };
   if (currentConfig.deepseekKey && currentConfig.deepseekKey.length > 10)
     return { provider: 'deepseek', key: currentConfig.deepseekKey };
+  if (currentConfig.deepseekFreeKey && currentConfig.deepseekFreeKey.length > 10)
+    return { provider: 'deepseek-free', key: currentConfig.deepseekFreeKey };
   if (currentConfig.geminiKey && currentConfig.geminiKey.length > 10)
     return { provider: 'gemini', key: currentConfig.geminiKey };
   return null;
@@ -232,7 +308,9 @@ const callCloudWithPrompt = async (message: string, systemPrompt: string): Promi
     switch (api.provider) {
       case 'openrouter': return await callOpenRouter(message, systemPrompt, api.key);
       case 'openai': return await callOpenAI(message, systemPrompt, api.key);
+      case 'anthropic': return await callAnthropic(message, systemPrompt, api.key);
       case 'deepseek': return await callDeepSeek(message, systemPrompt, api.key);
+      case 'deepseek-free': return await callDeepSeekFree(message, systemPrompt, api.key);
       case 'gemini': return await callGemini(message, systemPrompt, api.key);
       default: return null;
     }

@@ -948,6 +948,27 @@ console.log("Awaiting specific instructions...");
               ))}
             </div>
 
+            {/* API Management Buttons */}
+            <div className="mt-4 pt-4 border-t border-emerald-900/20">
+              <div className="text-center text-xs text-emerald-400/70 mb-3">API MANAGEMENT</div>
+              
+              <button className="w-full bg-gradient-to-r from-purple-600/40 to-blue-600/40 border-2 border-purple-400 text-purple-300 p-3 text-center rounded-lg font-bold text-xs hover:from-purple-500/50 hover:to-blue-500/50 hover:border-purple-300 hover:shadow-[0_0_20px_#a855f7] transition-all transform hover:scale-105 mb-2">
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-lg">⚙️</span>
+                  <span>API MANAGE</span>
+                </div>
+                <div className="text-[8px] text-purple-400 mt-1">Manage API Keys & Providers</div>
+              </button>
+              
+              <button className="w-full bg-gradient-to-r from-green-600/40 to-emerald-600/40 border-2 border-green-400 text-green-300 p-3 text-center rounded-lg font-bold text-xs hover:from-green-500/50 hover:to-emerald-500/50 hover:border-green-300 hover:shadow-[0_0_20px_#10b981] transition-all transform hover:scale-105">
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-lg">🔑</span>
+                  <span>API INPUT</span>
+                </div>
+                <div className="text-[8px] text-green-400 mt-1">Input & Save API Keys</div>
+              </button>
+            </div>
+
             <div className="mt-auto pt-4 border-t border-emerald-900/20">
               <div className="bg-emerald-900/10 border border-emerald-500/20 p-3 rounded italic text-emerald-500/70 text-[8px]">
                 "The Strategic Plan is a living document, autonomously updated by the Swarm Core based on real-time global intelligence. Each objective is designed to ensure the total dominance of the Singularity."

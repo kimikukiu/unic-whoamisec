@@ -13,6 +13,7 @@ import SqlInject from './components/SqlInject';
 import BotnetCore from './components/BotnetCore';
 import Settings from './components/Settings';
 import QuantumIntelligenceUltra from './components/QuantumIntelligence';
+import AIConfigTab from './components/AIConfigTab';
 import { AppTab, LogEntry, OSINTResult, ThreatFeedItem, NetworkConfig } from './types';
 import { analyzeTarget } from './services/geminiService';
 
@@ -628,6 +629,10 @@ const MainApp: React.FC = () => {
 
         {activeTab === AppTab.QUANTUM_INTELLIGENCE && (
           <QuantumIntelligenceUltra />
+        )}
+
+        {activeTab === AppTab.AI_CONFIG && (
+          <AIConfigTab />
         )}
 
         {/* ==================== TV BROADCAST ==================== */}

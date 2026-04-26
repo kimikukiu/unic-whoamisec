@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { LogEntry } from '../types';
 import { openRouterService } from '../services/openRouterService';
+import useQuantumEnhancement from '../hooks/useQuantumEnhancement';
 
 interface BotnetCoreProps {
   addLog: (message: string, level: LogEntry['level']) => void;
@@ -15,6 +16,13 @@ const BotnetCore: React.FC<BotnetCoreProps> = ({ addLog, isAttacking }) => {
   const [proxyLoading, setProxyLoading] = useState(false);
   const [apiStatus, setApiStatus] = useState<'checking' | 'online' | 'offline'>('checking');
   const [nodeCount, setNodeCount] = useState(0);
+  
+  // Quantum Intelligence Enhancement
+  const quantum = useQuantumEnhancement({
+    toolName: 'BotnetCore',
+    defaultMode: 'blackhat',
+    enableAI: true
+  });
 
   // Real API connectivity check on mount
   useEffect(() => {

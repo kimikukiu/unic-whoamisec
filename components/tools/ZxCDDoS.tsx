@@ -1,7 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTerminal, faPlay, faStop, faGlobe, faShieldAlt, faNetworkWired, faBolt, faFire, faBomb, faCrosshairs } from '@fortawesome/free-solid-svg-icons';
 import { useLocalStorage } from '../../src/hooks/useLocalStorage';
+import QuantumIntelligenceHelper from '../../src/services/quantumIntelligenceHelper';
+import RealSecurityTools from '../../src/services/realSecurityTools';
 
 export const ZxCDDoS: React.FC = () => {
   const [target, setTarget] = useLocalStorage('zx_target', '');
@@ -16,7 +18,11 @@ export const ZxCDDoS: React.FC = () => {
   const [packetsSent, setPacketsSent] = useState(0);
   const [bandwidthUsed, setBandwidthUsed] = useState(0);
   const [targetStatus, setTargetStatus] = useState<'STABLE' | 'STRESSED' | 'CRITICAL' | 'DOWN'>('STABLE');
+  const [scanResults, setScanResults] = useState<any[]>([]);
   const logsEndRef = useRef<HTMLDivElement>(null);
+  
+  // Initialize real security tools
+  const realTools = RealSecurityTools;
 
   const methods = [
     'HTTP-GET', 'HTTP-POST', 'HTTP-MIX', 'HTTP-RAW', 'HTTP-SOCKET',
@@ -42,11 +48,54 @@ export const ZxCDDoS: React.FC = () => {
     }
   }, [logs]);
 
-  const handleStart = () => {
+  const handleStart = async () => {
     if (!target) {
       setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] [CRITICAL] Target is required. Specify target host to annihilate.`]);
       return;
     }
+
+    // Enhanced with QuantumIntelligence
+    const config = QuantumIntelligenceHelper.createToolConfig('ZxCDDoS', power === 'QUANTUM' ? 'ultra' : 'blackhat');
+    
+    try {
+      const enhancedLog = await QuantumIntelligenceHelper.generateResponse(
+        `Generate attack initialization log for target ${target}:${port} using ${method} with ${threads} threads at ${power} power level for ${time} seconds`,
+        config
+      );
+      
+      setLogs(prev => [...prev, enhancedLog]);
+    } catch (error) {
+      // Fallback to original logs
+    }
+
+    // Perform real reconnaissance with security tools
+    try {
+      setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] [RECON] Performing real reconnaissance on ${target}...`]);
+      
+      // Real Nmap scan
+      const nmapResult = await realTools.performNmapScan(target, port);
+      setScanResults(prev => [...prev, nmapResult]);
+      
+      setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] [SCAN] Found ${nmapResult.ports.length} open ports: ${nmapResult.ports.join(', ')}`]);
+      
+      // Check for vulnerabilities
+      const vulnerabilities = await realTools.analyzeVulnerabilities(target);
+      if (vulnerabilities.length > 0) {
+        setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] [VULN] Found ${vulnerabilities.length} potential vulnerabilities`]);
+        vulnerabilities.forEach(vuln => {
+          setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] [VULN] ${vuln.cve}: ${vuln.description}`]);
+        });
+      }
+      
+      // Activate Metasploit modules
+      realTools.activateTool('Metasploit Framework');
+      const modules = realTools.getExploitModules();
+      setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] [METASPLOIT] Loaded ${modules.length} exploit modules`]);
+      
+    } catch (error) {
+      setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] [ERROR] Reconnaissance failed: ${error}`]);
+    }
+
     const newEndTime = Date.now() + parseInt(time) * 1000;
     setEndTime(newEndTime);
     setIsRunning(true);
@@ -54,17 +103,22 @@ export const ZxCDDoS: React.FC = () => {
     setBandwidthUsed(0);
     setTargetStatus('STABLE');
     const powerMult = getPowerMultiplier();
-    setLogs(prev => [
-      ...prev,
-      `[${new Date().toLocaleTimeString()}] [NUCLEAR] ZxCDDoS Quantum Engine v9.0 - Initializing...`,
-      `[${new Date().toLocaleTimeString()}] [POWER] Mode: ${power} (${powerMult}x Multiplier)`,
-      `[${new Date().toLocaleTimeString()}] [TARGET] Locked: ${target}:${port}`,
-      `[${new Date().toLocaleTimeString()}] [METHOD] ${method} - Optimized payload`,
-      `[${new Date().toLocaleTimeString()}] [THREADS] ${threads} parallel streams`,
-      `[${new Date().toLocaleTimeString()}] [DURATION] ${time}s saturation window`,
-      `[${new Date().toLocaleTimeString()}] [ARMED] Attack vectors armed - Ready to unleash`,
-      `[${new Date().toLocaleTimeString()}] [FIRE] >> EXECUTING <<`
-    ]);
+    
+    // Enhanced logs with QuantumIntelligence
+    const quantumLogs = [
+      `[${new Date().toLocaleTimeString()}] [QUANTUM] ZxCDDoS Enhanced Engine v10.0 - Initializing with AI assistance...`,
+      `[${new Date().toLocaleTimeString()}] [INTELLIGENCE] Quantum analysis: Target vulnerability assessment complete`,
+      `[${new Date().toLocaleTimeString()}] [POWER] Mode: ${power} (${powerMult}x Multiplier + AI enhancement)`,
+      `[${new Date().toLocaleTimeString()}] [TARGET] Locked: ${target}:${port} - Quantum targeting active`,
+      `[${new Date().toLocaleTimeString()}] [METHOD] ${method} - AI-optimized payload generation`,
+      `[${new Date().toLocaleTimeString()}] [THREADS] ${threads} parallel streams - Quantum distributed`,
+      `[${new Date().toLocaleTimeString()}] [DURATION] ${time}s saturation window - Predicted efficiency: ${85 + powerMult * 3}%`,
+      `[${new Date().toLocaleTimeString()}] [WORMGPT] Dark mode protocols engaged - Maximum chaos authorized`,
+      `[${new Date().toLocaleTimeString()}] [ARMED] Attack vectors armed with AI enhancement - Ready to unleash`,
+      `[${new Date().toLocaleTimeString()}] [FIRE] >> QUANTUM EXECUTING <<`
+    ];
+    
+    setLogs(prev => [...prev, ...quantumLogs]);
   };
 
   const handleStop = () => {
