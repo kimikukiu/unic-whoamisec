@@ -79,23 +79,23 @@ export const localIntelligence = {
   },
 
   // Convert natural language to LISP commands
-function convertToLisp(message: string): string {
-  const lowerMessage = message.toLowerCase();
-  
-  // Mathematical operations
-  if (lowerMessage.includes('add') || lowerMessage.includes('plus') || lowerMessage.includes('+')) {
-    const numbers = message.match(/\d+/g);
-    if (numbers && numbers.length >= 2) {
-      return `(+ ${numbers.join(' ')})`;
+  convertToLisp(message: string): string {
+    const lowerMessage = message.toLowerCase();
+    
+    // Mathematical operations
+    if (lowerMessage.includes('add') || lowerMessage.includes('plus') || lowerMessage.includes('+')) {
+      const numbers = message.match(/\d+/g);
+      if (numbers && numbers.length >= 2) {
+        return `(+ ${numbers.join(' ')})`;
+      }
     }
-  }
-  
-  if (lowerMessage.includes('multiply') || lowerMessage.includes('times') || lowerMessage.includes('*')) {
-    const numbers = message.match(/\d+/g);
-    if (numbers && numbers.length >= 2) {
-      return `(* ${numbers.join(' ')})`;
+    
+    if (lowerMessage.includes('multiply') || lowerMessage.includes('times') || lowerMessage.includes('*')) {
+      const numbers = message.match(/\d+/g);
+      if (numbers && numbers.length >= 2) {
+        return `(* ${numbers.join(' ')})`;
+      }
     }
-  }
   
   // String operations
   if (lowerMessage.includes('length')) {
@@ -138,38 +138,39 @@ function convertToLisp(message: string): string {
     }
   }
   
-  // Default to help
-  return '(help "Available functions: +, -, *, /, length, reverse, list, timestamp-ms, uuid, sha256")';
-}
+    // Default to help
+    return '(help "Available functions: +, -, *, /, length, reverse, list, timestamp-ms, uuid, sha256")';
+  },
 
-// REAL LISP execution function
-async function executeRealLisp(message: string, context: string): Promise<string> {
-  try {
-    // Import LISP functions dynamically
-    const { lispEval, lispToString } = await import('./lispService');
-    
-    // Parse the message to extract LISP commands or convert to LISP
-    let lispCommand = '';
-    
-    // Check if message contains LISP code
-    if (message.includes('(') && message.includes(')')) {
-      lispCommand = message;
-    } else {
-      // Convert natural language to LISP commands
-      lispCommand = convertToLisp(message);
+  // REAL LISP execution function
+  async executeRealLisp(message: string, context: string): Promise<string> {
+    try {
+      // Import LISP functions dynamically
+      const { lispEval, lispToString } = await import('./lispService');
+      
+      // Parse the message to extract LISP commands or convert to LISP
+      let lispCommand = '';
+      
+      // Check if message contains LISP code
+      if (message.includes('(') && message.includes(')')) {
+        lispCommand = message;
+      } else {
+        // Convert natural language to LISP commands
+        lispCommand = this.convertToLisp(message);
+      }
+      
+      // Execute the LISP command
+      const result = await lispEval(lispCommand);
+      const resultStr = lispToString(result.value);
+      
+      return `### ⚡ LISP ENGINE ACTIVE\n\n**Command:** ${lispCommand}\n**Result:** ${resultStr}\n**Context:** ${context}\n\n**Execution:** SUCCESS\n**Performance:** Zero-latency\n\n---\n**⚡ LISP Engine - Real Execution Complete**`;
+      
+    } catch (error) {
+      console.error("LISP Execution Error:", error);
+      return `### ⚡ LISP ENGINE ERROR\n\n**Command:** ${message}\n**Error:** ${error}\n**Status:** Execution failed\n\n---\n**⚡ LISP Engine - Error**`;
     }
-    
-    // Execute the LISP command
-    const result = await lispEval(lispCommand);
-    const resultStr = lispToString(result.value);
-    
-    return `### ⚡ LISP ENGINE ACTIVE\n\n**Command:** ${lispCommand}\n**Result:** ${resultStr}\n**Context:** ${context}\n\n**Execution:** SUCCESS\n**Performance:** Zero-latency\n\n---\n**⚡ LISP Engine - Real Execution Complete**`;
-    
-  } catch (error) {
-    console.error("LISP Execution Error:", error);
-    return `### ⚡ LISP ENGINE ERROR\n\n**Command:** ${message}\n**Error:** ${error}\n**Status:** Execution failed\n\n---\n**⚡ LISP Engine - Error**`;
-  }
-}
+  },
+
 
 /**
  * Generates leaked database records and extraction logs using AI.
